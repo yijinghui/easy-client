@@ -1,0 +1,62 @@
+<template>
+  <div id="app">
+    <router-view />
+    <Player v-if="showPlayer" />
+  </div>
+</template>
+
+<script setup>
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import Player from '@/components/player/Player.vue'
+
+const route = useRoute()
+
+// 控制播放栏是否显示（登录相关页面和全屏歌房页隐藏）
+const showPlayer = computed(() => {
+  const hiddenRoutes = ['/login', '/register', '/reset']
+  const hiddenPrefixes = ['/room/live/']
+  return !hiddenRoutes.includes(route.path) && !hiddenPrefixes.some(prefix => route.path.startsWith(prefix))
+})
+
+</script>
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#app {
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* 自定义滚动条样式 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+</style>

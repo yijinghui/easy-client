@@ -1,0 +1,64 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: #f5f7fa;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d9d9d9;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #bfbfbf;
+}
+
+/* 按钮点击效果 */
+button {
+  cursor: pointer;
+  outline: none;
+  border: none;
+  background: transparent;
+}
+
+button:focus {
+  outline: none;
+}
+
+/* 输入框样式 */
+input {
+  outline: none;
+}
+
+/* 图片样式 */
+img {
+  display: block;
+}
+
+/* 链接样式 */
+a {
+  text-decoration: none;
+  color: inherit;
+}
