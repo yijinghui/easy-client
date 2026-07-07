@@ -2,18 +2,31 @@
   <div class="page-content">
     <h2>推荐歌曲</h2>
     <div class="card-grid">
-      <div v-for="(item, index) in recommendSongs" :key="item.id || item.songId || index" class="playlist-card">
-        <div class="card-cover">
-          <img :src="item.cover" :alt="item.name" />
-          <div class="play-overlay" @click="playRecommendSong(index)">
-            <span class="play-icon">▶</span>
+      <template v-if="recommendSongs.length > 0">
+        <div v-for="(item, index) in recommendSongs" :key="item.id || item.songId || index" class="playlist-card">
+          <div class="card-cover">
+            <img :src="item.cover" :alt="item.name" />
+            <div class="play-overlay" @click="playRecommendSong(index)">
+              <span class="play-icon">▶</span>
+            </div>
+          </div>
+          <div class="card-info">
+            <h4>{{ item.name }}</h4>
+            <p>{{ item.artist }}</p>
           </div>
         </div>
-        <div class="card-info">
-          <h4>{{ item.name }}</h4>
-          <p>{{ item.artist }}</p>
+      </template>
+      <template v-else>
+        <div v-for="i in 6" :key="i" class="playlist-card skeleton-card">
+          <div class="card-cover">
+            <div class="cover-skeleton"></div>
+          </div>
+          <div class="card-info">
+            <div class="info-skeleton title-skeleton"></div>
+            <div class="info-skeleton artist-skeleton"></div>
+          </div>
         </div>
-      </div>
+      </template>
     </div>
   </div>
 </template>
@@ -165,5 +178,48 @@ const playRecommendSong = (index) => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.skeleton-card {
+  cursor: default;
+  box-shadow: none;
+}
+
+.cover-skeleton {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.info-skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.title-skeleton {
+  width: 80%;
+  height: 14px;
+  margin-bottom: 8px;
+}
+
+.artist-skeleton {
+  width: 60%;
+  height: 12px;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 </style>

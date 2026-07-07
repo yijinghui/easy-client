@@ -73,6 +73,26 @@
           </div>
           <span class="control-icon" @click.stop="handleNext">⏭</span>
           <span class="control-icon like-icon" :class="{ liked: isLiked }" @click.stop="handleLike">♡</span>
+          <span class="control-icon mode-icon" @click.stop="handleToggleMode">
+            <img 
+              v-if="playerStore.playMode === 'sequence'" 
+              src="@/assets/icons/loop.png" 
+              class="mode-icon-img"
+              title="顺序播放"
+            />
+            <img 
+              v-else-if="playerStore.playMode === 'shuffle'" 
+              src="@/assets/icons/shuffle.png" 
+              class="mode-icon-img active"
+              title="随机播放"
+            />
+            <img 
+              v-else 
+              src="@/assets/icons/playbock.png" 
+              class="mode-icon-img active"
+              title="单曲循环"
+            />
+          </span>
         </div>
         <div class="progress-container">
           <span class="time">{{ playerStore.formattedCurrentTime || '00:00' }}</span>
@@ -93,8 +113,21 @@
       <!-- 右侧：音量控制 -->
       <div class="player-right" @click.stop>
         <div class="volume-control">
-          <img src="@/assets/icons/p.png" class="control-icon comment-icon" @click.stop="handleComment" />
-          <span class="control-icon volume-icon" @click.stop>🔊</span>
+          <img src="@/assets/icons/comment.svg" class="control-icon comment-icon" @click.stop="handleComment" />
+          <span class="control-icon volume-icon" @click.stop="handleToggleMute">
+            <img 
+              v-if="isMuted || playerStore.volume === 0" 
+              src="@/assets/icons/close.svg" 
+              class="volume-icon-img"
+              title="点击取消静音"
+            />
+            <img 
+              v-else 
+              src="@/assets/icons/open.svg" 
+              class="volume-icon-img"
+              title="点击静音"
+            />
+          </span>
           <input 
             type="range" 
             v-model="playerStore.volume" 
@@ -125,6 +158,8 @@ const isExpanded = ref(false)
 const showPlaylist = ref(false)
 const audioRef = ref(null)
 const isDragging = ref(false)
+const isMuted = ref(false)
+const lastVolume = ref(30)
 const defaultCover = 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=music%20note%20icon%20simple%20white%20background&image_size=square'
 
 const parsedLyrics = ref([])
@@ -345,6 +380,10 @@ const handleNext = () => {
   loadAndPlay()
 }
 
+const handleToggleMode = () => {
+  playerStore.togglePlayMode()
+}
+
 const handleComment = () => {
   if (!playerStore.currentSong.name) {
     ElMessage.info('请先选择一首歌曲')
@@ -431,16 +470,19 @@ const handleEnded = () => {
     return
   }
 
-  if (playerStore.currentIndex < playerStore.playlist.length - 1) {
-    playerStore.next()
-    loadAndPlay()
-  } else {
-    playerStore.pause()
+  if (playerStore.playMode === 'single') {
     playerStore.currentTime = 0
     if (audioRef.value) {
       audioRef.value.currentTime = 0
     }
+    if (playerStore.isPlaying) {
+      audioRef.value?.play().catch(() => {})
+    }
+    return
   }
+
+  playerStore.next()
+  loadAndPlay()
 }
 
 const handleAudioError = (e) => {
@@ -449,9 +491,28 @@ const handleAudioError = (e) => {
   ElMessage.error('音频加载失败')
 }
 
+const handleToggleMute = () => {
+  if (!audioRef.value) return
+  
+  if (isMuted.value) {
+    isMuted.value = false
+    playerStore.setVolume(lastVolume.value)
+    audioRef.value.volume = lastVolume.value / 100
+  } else {
+    lastVolume.value = playerStore.volume
+    isMuted.value = true
+    playerStore.setVolume(0)
+    audioRef.value.volume = 0
+  }
+}
+
 const handleVolumeChange = () => {
   if (audioRef.value) {
     audioRef.value.volume = playerStore.volume / 100
+  }
+  
+  if (playerStore.volume > 0 && isMuted.value) {
+    isMuted.value = false
   }
 }
 
@@ -525,6 +586,12 @@ watch(() => playerStore.isPlaying, (isPlaying) => {
     })
   } else {
     audioRef.value.pause()
+  }
+})
+
+watch(() => playerStore.volume, (volume) => {
+  if (audioRef.value) {
+    audioRef.value.volume = volume / 100
   }
 })
 
@@ -782,8 +849,13 @@ onUnmounted(() => {
 }
 
 .like-icon {
-  font-size: 20px;
-  margin-top: 5px;
+  font-size: 26px;
+  margin-top: 3px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .like-icon:hover {
@@ -793,15 +865,48 @@ onUnmounted(() => {
 
 .like-icon.liked {
   color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.mode-icon {
+  margin-top: 5px;
+}
+
+.mode-icon-img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  filter: brightness(0.5);
+  transition: all 0.2s;
+}
+
+.mode-icon:hover .mode-icon-img {
+  filter: brightness(0.8);
+}
+
+.mode-icon-img.active {
+  filter: brightness(1);
+  color: #409eff;
 }
 
 .comment-icon {
-  margin-top: 5px;
-  width: 25px;
-  height: 25px;
+  margin-top: 4px;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  border-radius: 25%;
+}
+
+.volume-icon-img {
+  width: 20px;
+  height: 20px;
   object-fit: contain;
   filter: brightness(0.6);
-  border-radius: 25%;
+  transition: all 0.2s;
+}
+
+.volume-icon:hover .volume-icon-img {
+  filter: brightness(1);
 }
 
 .play-btn {

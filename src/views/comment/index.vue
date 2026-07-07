@@ -47,7 +47,7 @@
                   <span>{{ comment.likeCount }}</span>
                 </span>
                 <span class="comment-action reply-action" :class="{ active: replyTargetComment && replyTargetComment.commentId === comment.commentId }" @click="handleReplyComment(comment)">
-                  <img src="/src/assets/icons/p.png" class="action-icon" />
+                  <img src="/src/assets/icons/reply.svg" class="action-icon" />
                   <span>回复</span>
                 </span>
               </div>
@@ -95,7 +95,7 @@
                     <span>{{ reply.likeCount }}</span>
                   </span>
                   <span class="reply-action reply-action-btn" :class="{ active: replyTargetComment && replyTargetComment.commentId === reply.commentId }" @click="handleReplyComment(reply)">
-                  <img src="/src/assets/icons/p.png" class="action-icon" />
+                  <img src="/src/assets/icons/reply.svg" class="action-icon" />
                   <span>回复</span>
                 </span>
                 </div>
@@ -307,14 +307,26 @@ const handleViewReplies = async (commentId) => {
 }
 
 const handleLikeComment = async (comment) => {
+  const token = localStorage.getItem('token')
+  if (!token) {
+    ElMessage.info('请先登录')
+    router.push('/login')
+    return
+  }
+  
+  const targetLiked = !comment.isLiked
+  const targetLikeStatus = targetLiked ? 1 : 0
+  
   try {
-    const likeStatus = comment.isLiked ? -1 : 1
-    await likeComment(comment.commentId, comment.isLiked ? 0 : 1)
-    comment.isLiked = !comment.isLiked
-    comment.likeCount += likeStatus
+    await likeComment(comment.commentId, targetLikeStatus)
+    comment.isLiked = targetLiked
+    comment.likeCount += targetLiked ? 1 : -1
+    if (comment.likeCount < 0) {
+      comment.likeCount = 0
+    }
   } catch (error) {
     console.error('点赞失败', error)
-    ElMessage.error('点赞失败')
+    ElMessage.error('操作失败')
   }
 }
 
@@ -532,20 +544,6 @@ const loadMoreComments = async () => {
   color: #303133;
 }
 
-.svip-badge {
-  background: linear-gradient(135deg, #ffd700 0%, #ffb700 100%);
-  color: #8b4513;
-  font-size: 10px;
-  font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-
-.svip-badge.small {
-  font-size: 9px;
-  padding: 1px 4px;
-}
-
 .comment-time {
   font-size: 13px;
   color: #909399;
@@ -604,9 +602,10 @@ const loadMoreComments = async () => {
 }
 
 .action-icon {
-  font-size: 16px;
-  width: 16px;
-  height: 16px;
+  margin-top: 3px;
+  font-size: 21px;
+  width: 18px;
+  height: 18px;
   object-fit: contain;
   vertical-align: middle;
 }

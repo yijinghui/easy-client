@@ -28,6 +28,9 @@
             <span class="action-icon">⋮</span>
           </div>
           <div v-if="activeMenu === song.id" class="action-menu" @click.stop>
+            <div class="menu-item" @click="addToPlayQueue(song)">
+              <span>添加到播放队列</span>
+            </div>
             <div class="menu-item" @click="addToFavorite(song)">
               <span>{{ song.isFavorite ? '取消收藏' : '加入我喜欢' }}</span>
             </div>
@@ -128,6 +131,18 @@ const playRecentSong = (song) => {
 
 const toggleMenu = (songId) => {
   activeMenu.value = activeMenu.value === songId ? null : songId
+}
+
+const addToPlayQueue = (song) => {
+  if (!isLoggedIn.value) {
+    ElMessage.info('未登录，登录后体验更多内容')
+    router.push('/login')
+    return
+  }
+  
+  playerStore.addToPlayQueue(song)
+  activeMenu.value = null
+  ElMessage.success(`已将 "${song.name}" 加入下一首播放`)
 }
 
 const addToFavorite = async (song) => {

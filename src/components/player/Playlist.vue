@@ -3,6 +3,23 @@
     <div class="playlist-header">
       <span class="playlist-title">播放队列</span>
       <span class="playlist-count">{{ playerStore.playlist.length + playerStore.playQueue.length }} 首</span>
+      <span class="playlist-mode" :title="getModeTitle()" @click.stop="handleToggleMode">
+        <img 
+          v-if="playerStore.playMode === 'sequence'" 
+          src="@/assets/icons/loop.png" 
+          class="mode-icon"
+        />
+        <img 
+          v-else-if="playerStore.playMode === 'shuffle'" 
+          src="@/assets/icons/shuffle.png" 
+          class="mode-icon active"
+        />
+        <img 
+          v-else 
+          src="@/assets/icons/playbock.png" 
+          class="mode-icon active"
+        />
+      </span>
       <span class="playlist-close" @click="handleClose">×</span>
     </div>
     <div class="playlist-list">
@@ -61,6 +78,19 @@ const handleClose = () => {
   emit('close')
 }
 
+const getModeTitle = () => {
+  const titles = {
+    sequence: '顺序播放',
+    shuffle: '随机播放',
+    single: '单曲循环'
+  }
+  return titles[playerStore.playMode] || '顺序播放'
+}
+
+const handleToggleMode = () => {
+  playerStore.togglePlayMode()
+}
+
 const handlePlaySong = (index) => {
   playerStore.playSong(index)
   emit('close')
@@ -113,6 +143,31 @@ const formatDuration = (seconds) => {
   font-size: 12px;
   opacity: 0.8;
   margin-left: 8px;
+}
+
+.playlist-mode {
+  margin-left: 8px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.playlist-mode:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.mode-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  opacity: 0.7;
+  filter: brightness(0.8);
+}
+
+.mode-icon.active {
+  opacity: 1;
+  filter: brightness(1);
 }
 
 .playlist-close {

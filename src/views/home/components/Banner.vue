@@ -1,34 +1,37 @@
 <template>
 <div class="page-content">
-    <div v-if="banners.length > 0" class="banner-container" @mouseenter="stopBannerTimer" @mouseleave="startBannerTimer">
-      <div class="banner-3d-wrapper">
-        <div 
-          v-for="(banner, index) in banners" 
-          :key="banner.id" 
-          class="banner-item"
-          :style="getBannerStyle(index)"
-          @click="goToBanner(index)"
-        >
-          <img :src="banner.url" :alt="`轮播图${index + 1}`" class="banner-image" />
+    <div class="banner-container">
+      <div v-if="banners.length === 0" class="banner-skeleton"></div>
+      <template v-else>
+        <div class="banner-3d-wrapper" @mouseenter="stopBannerTimer" @mouseleave="startBannerTimer">
+          <div 
+            v-for="(banner, index) in banners" 
+            :key="banner.id" 
+            class="banner-item"
+            :style="getBannerStyle(index)"
+            @click="goToBanner(index)"
+          >
+            <img :src="banner.url" :alt="`轮播图${index + 1}`" class="banner-image" />
+          </div>
         </div>
-      </div>
-      
-      <button class="banner-arrow banner-arrow-left" @click="prevBanner">
-        <span class="arrow-icon">‹</span>
-      </button>
-      <button class="banner-arrow banner-arrow-right" @click="nextBanner">
-        <span class="arrow-icon">›</span>
-      </button>
-      
-      <div class="banner-indicators">
-        <span 
-          v-for="(banner, index) in banners" 
-          :key="banner.id" 
-          class="indicator"
-          :class="{ active: index === currentBannerIndex }"
-          @click="goToBanner(index)"
-        ></span>
-      </div>
+        
+        <button class="banner-arrow banner-arrow-left" @click="prevBanner">
+          <span class="arrow-icon">‹</span>
+        </button>
+        <button class="banner-arrow banner-arrow-right" @click="nextBanner">
+          <span class="arrow-icon">›</span>
+        </button>
+        
+        <div class="banner-indicators">
+          <span 
+            v-for="(banner, index) in banners" 
+            :key="banner.id" 
+            class="indicator"
+            :class="{ active: index === currentBannerIndex }"
+            @click="goToBanner(index)"
+          ></span>
+        </div>
+      </template>
     </div>
 </div>
 </template>
@@ -335,5 +338,23 @@ const getBannerStyle = (index) => {
   width: 24px;
   border-radius: 5px;
   background: #409eff;
+}
+
+.banner-skeleton {
+  width: 100%;
+  height: 280px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 12px;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 </style>

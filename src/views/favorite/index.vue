@@ -6,6 +6,7 @@
         <div class="col-title">歌名/歌手</div>
         <div class="col-album">专辑</div>
         <div class="col-duration">时长</div>
+        <div class="col-actions"></div>
       </div>
       <div v-for="song in favoriteSongs" :key="song.id" class="favorite-item">
         <div class="song-info">
@@ -23,9 +24,9 @@
         <div class="song-album">{{ song.album }}</div>
         <div class="song-duration">{{ formatDuration(song.duration) }}</div>
         <div class="song-actions">
-          <div class="action-btn add-queue-btn" @click.stop="addToPlayQueue(song)">
-            <img src="@/assets/icons/add.png" class="action-icon" />
-          </div>
+          <span class="action-btn add-btn" @click.stop="addToPlayQueue(song)">
+            <img src="@/assets/icons/playlist.png" />
+          </span>
         </div>
       </div>
       <div v-if="favoriteSongs.length === 0" class="empty-state">
@@ -192,13 +193,16 @@ const handleFavoriteUpdated = (e) => {
   text-align: left;
 }
 
+.favorite-header .col-actions {
+  width: 48px;
+}
+
 .favorite-item {
   display: flex;
   align-items: center;
   padding: 10px 16px;
   border-bottom: 1px solid #f8f8f8;
   transition: background 0.2s;
-  gap: 12px;
 }
 
 .favorite-item:hover {
@@ -210,6 +214,7 @@ const handleFavoriteUpdated = (e) => {
   display: flex;
   align-items: center;
   min-width: 0;
+  margin-right: auto;
 }
 
 .cover-wrapper {
@@ -281,45 +286,50 @@ const handleFavoriteUpdated = (e) => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex-shrink: 0;
 }
 
 .song-duration {
   width: 80px;
   font-size: 12px;
   color: #909399;
+  flex-shrink: 0;
 }
 
 .song-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 16px;
+  width: 48px;
   flex-shrink: 0;
 }
 
 .action-btn {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
+  border-radius: 50%;
   cursor: pointer;
-  transition: background 0.2s;
+  font-size: 16px;
+  color: #475569;
+  transition: all 0.2s;
 }
 
 .action-btn:hover {
-  background: #f0f0f0;
+  background: #f0f9ff;
 }
 
-.action-icon {
-  width: 16px;
-  height: 16px;
-  opacity: 0.6;
-  transition: opacity 0.2s;
+.add-btn img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  filter: brightness(0.6);
 }
 
-.action-btn:hover .action-icon {
-  opacity: 1;
+.add-btn:hover img {
+  filter: brightness(1);
 }
 
 .empty-state {

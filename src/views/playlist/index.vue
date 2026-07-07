@@ -54,6 +54,7 @@
             <div class="col-artist">歌手</div>
             <div class="col-album">专辑</div>
             <div class="col-duration">时长</div>
+            <div class="col-action"></div>
           </div>
           <div 
             v-for="(song, index) in songs" 
@@ -522,7 +523,7 @@ const handleDelete = async () => {
 }
 
 .list-header .col-index {
-  width: 50px;
+  width: 60px;
   font-size: 12px;
   color: #909399;
 }
@@ -531,24 +532,33 @@ const handleDelete = async () => {
   flex: 1;
   font-size: 12px;
   color: #909399;
+  margin-right: auto;
 }
 
 .list-header .col-artist {
   width: 150px;
   font-size: 12px;
   color: #909399;
+  flex-shrink: 0;
 }
 
 .list-header .col-album {
   width: 180px;
   font-size: 12px;
   color: #909399;
+  flex-shrink: 0;
 }
 
 .list-header .col-duration {
   width: 80px;
   font-size: 12px;
   color: #909399;
+  flex-shrink: 0;
+}
+
+.list-header .col-action {
+  width: 40px;
+  flex-shrink: 0;
 }
 
 .song-item {
@@ -573,6 +583,7 @@ const handleDelete = async () => {
   align-items: center;
   justify-content: flex-start;
   gap: 6px;
+  flex-shrink: 0;
 }
 
 .song-index {
@@ -595,6 +606,7 @@ const handleDelete = async () => {
   display: flex;
   align-items: center;
   min-width: 0;
+  margin-right: auto;
 }
 
 .cover-wrapper {
@@ -666,6 +678,7 @@ const handleDelete = async () => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex-shrink: 0;
 }
 
 .song-item .col-album {
@@ -675,18 +688,21 @@ const handleDelete = async () => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex-shrink: 0;
 }
 
 .song-item .col-duration {
   width: 80px;
   font-size: 13px;
   color: #909399;
+  flex-shrink: 0;
 }
 
 .song-item .col-action {
   width: 40px;
   display: flex;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .action-icon {

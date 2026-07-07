@@ -54,6 +54,8 @@ export const usePlayerStore = defineStore('player', () => {
   
   const playQueue = ref([])
   
+  const playMode = ref('sequence')
+  
   const progress = computed(() => {
     if (!currentSong.value.duration) return 0
     return (currentTime.value / currentSong.value.duration) * 100
@@ -97,7 +99,20 @@ export const usePlayerStore = defineStore('player', () => {
       playlist.value.splice(currentIndex.value + 1, 0, queuedSong)
     }
 
-    currentIndex.value = (currentIndex.value + 1) % playlist.value.length
+    if (playMode.value === 'shuffle') {
+      if (playlist.value.length === 1) {
+        currentTime.value = 0
+        return
+      }
+      let randomIndex
+      do {
+        randomIndex = Math.floor(Math.random() * playlist.value.length)
+      } while (randomIndex === currentIndex.value)
+      currentIndex.value = randomIndex
+    } else {
+      currentIndex.value = (currentIndex.value + 1) % playlist.value.length
+    }
+
     currentSong.value = normalizeSong(playlist.value[currentIndex.value])
     currentTime.value = 0
   }
@@ -203,6 +218,21 @@ export const usePlayerStore = defineStore('player', () => {
     playQueue.value = []
   }
   
+  function togglePlayMode() {
+    const modes = ['sequence', 'shuffle', 'single']
+    const currentIndex = modes.indexOf(playMode.value)
+    playMode.value = modes[(currentIndex + 1) % modes.length]
+  }
+  
+  function shuffleArray(array) {
+    const arr = [...array]
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]]
+    }
+    return arr
+  }
+  
   return {
     currentSong,
     currentTime,
@@ -212,6 +242,7 @@ export const usePlayerStore = defineStore('player', () => {
     currentIndex,
     favoriteSongIds,
     playQueue,
+    playMode,
     progress,
     formattedCurrentTime,
     formattedDuration,
@@ -229,6 +260,8 @@ export const usePlayerStore = defineStore('player', () => {
     removeFavoriteSongId,
     isSongFavorite,
     addToPlayQueue,
-    clearPlayQueue
+    clearPlayQueue,
+    togglePlayMode,
+    shuffleArray
   }
 })
