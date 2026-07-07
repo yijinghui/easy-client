@@ -46,17 +46,13 @@ export const usePlayerStore = defineStore('player', () => {
   const currentTime = ref(0)
   const isPlaying = ref(false)
   const volume = ref(30)
-  const playlist = ref([
-    { id: 1, name: '夜曲', artist: '周杰伦', album: '十一月的萧邦', cover: 'https://picsum.photos/100/100?random=1', duration: 245, isLiked: false },
-    { id: 2, name: '晴天', artist: '周杰伦', album: '叶惠美', cover: 'https://picsum.photos/100/100?random=2', duration: 269, isLiked: false },
-    { id: 3, name: '稻香', artist: '周杰伦', album: '魔杰座', cover: 'https://picsum.photos/100/100?random=3', duration: 223, isLiked: false },
-    { id: 4, name: '七里香', artist: '周杰伦', album: '七里香', cover: 'https://picsum.photos/100/100?random=4', duration: 299, isLiked: false },
-    { id: 5, name: '简单爱', artist: '周杰伦', album: '范特西', cover: 'https://picsum.photos/100/100?random=5', duration: 270, isLiked: false }
-  ])
+  const playlist = ref([])
   
   const favoriteSongIds = ref([])
   
   const currentIndex = ref(0)
+  
+  const playQueue = ref([])
   
   const progress = computed(() => {
     if (!currentSong.value.duration) return 0
@@ -96,6 +92,11 @@ export const usePlayerStore = defineStore('player', () => {
   function next() {
     if (!playlist.value.length) return
 
+    if (playQueue.value.length > 0) {
+      const queuedSong = playQueue.value.shift()
+      playlist.value.splice(currentIndex.value + 1, 0, queuedSong)
+    }
+
     currentIndex.value = (currentIndex.value + 1) % playlist.value.length
     currentSong.value = normalizeSong(playlist.value[currentIndex.value])
     currentTime.value = 0
@@ -125,6 +126,12 @@ export const usePlayerStore = defineStore('player', () => {
 
     playlist.value[index] = song
     currentIndex.value = index
+
+    if (playQueue.value.length > 0) {
+      playlist.value.splice(index + 1, 0, ...playQueue.value)
+      playQueue.value = []
+    }
+
     currentSong.value = song
     currentTime.value = 0
     isPlaying.value = false
@@ -160,6 +167,42 @@ export const usePlayerStore = defineStore('player', () => {
     return favoriteSongIds.value.includes(songId)
   }
   
+  function addToPlayQueue(song) {
+    const normalizedSong = normalizeSong(song)
+    const songId = normalizedSong.id
+
+    if (playlist.value.length === 0) {
+      playlist.value = [normalizedSong]
+      playSong(0)
+      return
+    }
+
+    const playlistIndex = playlist.value.findIndex(s => s.id === songId)
+    if (playlistIndex !== -1) {
+      if (playlistIndex <= currentIndex.value) {
+        playlist.value.splice(playlistIndex, 1)
+        playQueue.value.unshift(normalizedSong)
+      } else {
+        playlist.value.splice(playlistIndex, 1)
+        playlist.value.splice(currentIndex.value + 1, 0, normalizedSong)
+      }
+      return
+    }
+
+    const queueIndex = playQueue.value.findIndex(s => s.id === songId)
+    if (queueIndex !== -1) {
+      playQueue.value.splice(queueIndex, 1)
+      playQueue.value.unshift(normalizedSong)
+      return
+    }
+
+    playQueue.value.push(normalizedSong)
+  }
+  
+  function clearPlayQueue() {
+    playQueue.value = []
+  }
+  
   return {
     currentSong,
     currentTime,
@@ -168,6 +211,7 @@ export const usePlayerStore = defineStore('player', () => {
     playlist,
     currentIndex,
     favoriteSongIds,
+    playQueue,
     progress,
     formattedCurrentTime,
     formattedDuration,
@@ -183,6 +227,8 @@ export const usePlayerStore = defineStore('player', () => {
     setFavoriteSongIds,
     addFavoriteSongId,
     removeFavoriteSongId,
-    isSongFavorite
+    isSongFavorite,
+    addToPlayQueue,
+    clearPlayQueue
   }
 })

@@ -2,13 +2,13 @@
   <div class="playlist-popup" v-if="visible" @click.stop>
     <div class="playlist-header">
       <span class="playlist-title">播放队列</span>
-      <span class="playlist-count">{{ playerStore.playlist.length }} 首</span>
+      <span class="playlist-count">{{ playerStore.playlist.length + playerStore.playQueue.length }} 首</span>
       <span class="playlist-close" @click="handleClose">×</span>
     </div>
     <div class="playlist-list">
       <div 
         v-for="(song, index) in playerStore.playlist" 
-        :key="song.id"
+        :key="`playlist-${song.id}-${index}`"
         class="playlist-item"
         :class="{ playing: index === playerStore.currentIndex }"
         @click="handlePlaySong(index)"
@@ -21,7 +21,25 @@
           <span class="item-artist">{{ song.artist }}</span>
         </div>
       </div>
-      <div v-if="playerStore.playlist.length === 0" class="playlist-empty">
+      <div v-if="playerStore.playQueue.length > 0" class="queue-divider">
+        <span>待播放</span>
+      </div>
+      <div 
+        v-for="(song, index) in playerStore.playQueue" 
+        :key="`queue-${song.id}-${index}`"
+        class="playlist-item queued"
+        @click="handlePlayQueuedSong(index)"
+      >
+        <div class="item-cover">
+          <img :src="song.cover" :alt="song.name" />
+        </div>
+        <div class="item-info">
+          <span class="item-name">{{ song.name }}</span>
+          <span class="item-artist">{{ song.artist }}</span>
+        </div>
+        <span class="queue-badge">下一首</span>
+      </div>
+      <div v-if="playerStore.playlist.length === 0 && playerStore.playQueue.length === 0" class="playlist-empty">
         暂无播放歌曲
       </div>
     </div>
@@ -45,6 +63,14 @@ const handleClose = () => {
 
 const handlePlaySong = (index) => {
   playerStore.playSong(index)
+  emit('close')
+}
+
+const handlePlayQueuedSong = (index) => {
+  const queuedSong = playerStore.playQueue[index]
+  playerStore.playlist.splice(playerStore.currentIndex + 1, 0, queuedSong)
+  playerStore.playQueue.splice(index, 1)
+  playerStore.playSong(playerStore.currentIndex + 1)
   emit('close')
 }
 
@@ -212,5 +238,37 @@ const formatDuration = (seconds) => {
   text-align: center;
   font-size: 14px;
   color: #94a3b8;
+}
+
+.queue-divider {
+  padding: 8px 14px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.queue-divider span {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.playlist-item.queued {
+  opacity: 0.85;
+}
+
+.playlist-item.queued:hover {
+  background: #f1f5f9;
+}
+
+.queue-badge {
+  font-size: 10px;
+  color: #64748b;
+  background: #e2e8f0;
+  padding: 2px 6px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 </style>

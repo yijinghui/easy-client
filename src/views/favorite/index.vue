@@ -22,6 +22,11 @@
         </div>
         <div class="song-album">{{ song.album }}</div>
         <div class="song-duration">{{ formatDuration(song.duration) }}</div>
+        <div class="song-actions">
+          <div class="action-btn add-queue-btn" @click.stop="addToPlayQueue(song)">
+            <img src="@/assets/icons/add.png" class="action-icon" />
+          </div>
+        </div>
       </div>
       <div v-if="favoriteSongs.length === 0" class="empty-state">
         <span>暂无喜欢的歌曲</span>
@@ -103,6 +108,17 @@ const playFavoriteSong = (song) => {
   playerStore.playSong(index)
 }
 
+const addToPlayQueue = (song) => {
+  if (!isLoggedIn.value) {
+    ElMessage.info('未登录，登录后体验更多内容')
+    router.push('/login')
+    return
+  }
+  
+  playerStore.addToPlayQueue(song)
+  ElMessage.success(`已将 "${song.name}" 加入下一首播放`)
+}
+
 const handleFavoriteUpdated = (e) => {
   const { type, songId, song } = e.detail
   
@@ -182,6 +198,7 @@ const handleFavoriteUpdated = (e) => {
   padding: 10px 16px;
   border-bottom: 1px solid #f8f8f8;
   transition: background 0.2s;
+  gap: 12px;
 }
 
 .favorite-item:hover {
@@ -270,6 +287,39 @@ const handleFavoriteUpdated = (e) => {
   width: 80px;
   font-size: 12px;
   color: #909399;
+}
+
+.song-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.action-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.action-btn:hover {
+  background: #f0f0f0;
+}
+
+.action-icon {
+  width: 16px;
+  height: 16px;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.action-btn:hover .action-icon {
+  opacity: 1;
 }
 
 .empty-state {
