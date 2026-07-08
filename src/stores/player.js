@@ -91,7 +91,7 @@ export const usePlayerStore = defineStore('player', () => {
     playlist.value = Array.isArray(songs) ? songs.map((song, index) => normalizeSong(song, `playlist-${index}`)) : []
   }
   
-  function next() {
+  async function next() {
     if (!playlist.value.length) return
 
     if (playQueue.value.length > 0) {
@@ -115,14 +115,30 @@ export const usePlayerStore = defineStore('player', () => {
 
     currentSong.value = normalizeSong(playlist.value[currentIndex.value])
     currentTime.value = 0
+
+    if (currentSong.value.id) {
+      try {
+        await listenSong(currentSong.value.id)
+      } catch (error) {
+        console.error('记录播放记录失败', error)
+      }
+    }
   }
   
-  function prev() {
+  async function prev() {
     if (!playlist.value.length) return
 
     currentIndex.value = (currentIndex.value - 1 + playlist.value.length) % playlist.value.length
     currentSong.value = normalizeSong(playlist.value[currentIndex.value])
     currentTime.value = 0
+
+    if (currentSong.value.id) {
+      try {
+        await listenSong(currentSong.value.id)
+      } catch (error) {
+        console.error('记录播放记录失败', error)
+      }
+    }
   }
   
   function setVolume(val) {
