@@ -146,7 +146,7 @@ const fetchPlaylist = async () => {
         cover: getPlaylistCover(found.coverUrl, `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=music%20playlist%20cover%20${encodeURIComponent(found.style || 'abstract')}&image_size=square`),
         introduction: found.introduction,
         style: found.style,
-        userName: found.username || '',
+        userName: found.username || '未知用户',
         userId: found.userId || '',
         playCount: found.playCount || 0,
         isFavorite: found.isFavorite || false,

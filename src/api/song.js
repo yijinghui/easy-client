@@ -21,7 +21,7 @@ export const getMonthTop200 = (offset = 0) => request.get('/song/top200/month', 
  * 搜索歌曲
  * @param {string} text 搜索关键词
  */
-export const searchSongs = (text) => request.post('/song/search', null, { params: { text } })
+export const searchSongs = (text, pageNum = 1, pageSize = 20) => request.post('/song/search', null, { params: { text, pageNum, pageSize } })
 
 /**
  * 记录播放记录

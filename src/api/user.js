@@ -104,3 +104,11 @@ export const deleteAccount = () => request.delete('/account');
 export const certifyArtist = (artistId) => request.post('/artist/certify', null, {
   params: { artistId }
 });
+
+/**
+ * 搜索用户
+ * @param {string} username - 用户名
+ * @param {number} pageNum - 页码
+ * @param {number} pageSize - 每页大小
+ */
+export const searchUsers = (username, pageNum = 1, pageSize = 20) => request.get('/search', { params: { username, pageNum, pageSize } });

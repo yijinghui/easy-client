@@ -16,6 +16,6 @@ export const addSongToPlaylist = (playlistId, songId) => request.post(`/playlist
 
 export const removeSongFromPlaylist = (playlistId, songId) => request.delete(`/playlist/${playlistId}/song/${songId}`)
 
-export const searchPlaylists = (text) => request.get('/playlist/search', { params: { text } })
+export const searchPlaylists = (text, pageNum = 1, pageSize = 20) => request.get('/playlist/search', { params: { text, pageNum, pageSize } })
 
 export const getPlaylistSongs = (playlistId, params) => request.get(`/song/playlist/${playlistId}`, { params })

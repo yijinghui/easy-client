@@ -230,13 +230,7 @@ const addToQueue = (song) => {
     return
   }
 
-  const exists = playerStore.playlist.find(s => s.id === song.id)
-  if (exists) {
-    ElMessage.info('歌曲已在播放队列中')
-    return
-  }
-
-  playerStore.playlist.push(song)
+  playerStore.addToPlayQueue(song)
   ElMessage.success('已加入播放队列')
 }
 
