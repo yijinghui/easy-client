@@ -274,13 +274,21 @@ onMounted(() => {
   window.addEventListener('user-avatar-updated', handleAvatarUpdated)
   window.addEventListener('click', closeContextMenu)
   window.addEventListener('playlist-deleted', handlePlaylistDeleted)
+  window.addEventListener('playlist-cover-updated', handlePlaylistCoverUpdated)
 })
 
 onUnmounted(() => {
   window.removeEventListener('user-avatar-updated', handleAvatarUpdated)
   window.removeEventListener('click', closeContextMenu)
   window.removeEventListener('playlist-deleted', handlePlaylistDeleted)
+  window.removeEventListener('playlist-cover-updated', handlePlaylistCoverUpdated)
 })
+
+const handlePlaylistCoverUpdated = async () => {
+  if (playlistTab.value === 'custom') {
+    await fetchPlaylists()
+  }
+}
 
 const handlePlaylistDeleted = async () => {
   await fetchPlaylists()
@@ -326,16 +334,20 @@ const fetchUserInfo = async () => {
 
 const fetchPlaylists = async () => {
   customPlaylists.value = []
+  const cacheBuster = Date.now()
   try {
     const res = await getPlaylists({ _silent401: true })
     if (res.data) {
       customPlaylists.value = res.data
         .filter(p => !p.isFavorite)
-        .map(p => ({
-          id: p.playlistId,
-          name: p.title,
-          cover: getPlaylistCover(p.coverUrl, `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=music%20playlist%20cover%20${encodeURIComponent(p.style || 'abstract')}&image_size=square`)
-        }))
+        .map(p => {
+          const coverUrl = getPlaylistCover(p.coverUrl, `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=music%20playlist%20cover%20${encodeURIComponent(p.style || 'abstract')}&image_size=square`)
+          return {
+            id: p.playlistId,
+            name: p.title,
+            cover: coverUrl.includes('?') ? `${coverUrl}&_t=${cacheBuster}` : `${coverUrl}?_t=${cacheBuster}`
+          }
+        })
     }
   } catch (error) {
     console.error('获取歌单列表失败', error)

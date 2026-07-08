@@ -8,7 +8,6 @@
       </div>
       
       <div class="edit-form">
-        <!-- 封面编辑区域（预留） -->
         <div class="form-section">
           <label class="form-label">歌单封面</label>
           <div class="cover-edit-area" @click="handleCoverClick">
@@ -20,9 +19,16 @@
             <div class="cover-overlay">
               <span class="overlay-icon">+</span>
               <span class="overlay-text">更换封面</span>
-              <span class="overlay-hint">功能开发中</span>
+              <span class="overlay-hint">点击选择图片</span>
             </div>
           </div>
+          <input 
+            ref="fileInputRef"
+            type="file" 
+            accept="image/*" 
+            class="file-input"
+            @change="handleFileChange"
+          />
         </div>
 
         <!-- 标题 -->
@@ -80,7 +86,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getPlaylistDetail, updatePlaylist } from '@/api/playlist'
+import { getPlaylistDetail, updatePlaylist, updatePlaylistCover } from '@/api/playlist'
 import { getPlaylistCover } from '@/utils/asset'
 
 const route = useRoute()
@@ -88,14 +94,15 @@ const router = useRouter()
 
 const loading = ref(true)
 const saving = ref(false)
+const uploading = ref(false)
 const playlist = ref(null)
+const fileInputRef = ref(null)
 
 const form = ref({
   playlistId: null,
   title: '',
   introduction: '',
-  style: '',
-  coverUrl: ''
+  style: ''
 })
 
 const coverUrl = computed(() => {
@@ -123,8 +130,7 @@ const fetchPlaylist = async () => {
         playlistId: res.data.playlistId,
         title: res.data.title || '',
         introduction: res.data.introduction || '',
-        style: res.data.style || '',
-        coverUrl: res.data.coverUrl || ''
+        style: res.data.style || ''
       }
     }
   } catch (error) {
@@ -166,7 +172,44 @@ const handleCancel = () => {
 }
 
 const handleCoverClick = () => {
-  ElMessage.info('封面编辑功能开发中，敬请期待')
+  fileInputRef.value?.click()
+}
+
+const handleFileChange = async (e) => {
+  const file = e.target.files?.[0]
+  if (!file) return
+
+  const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+  if (!validTypes.includes(file.type)) {
+    ElMessage.warning('请选择有效的图片格式（支持 JPG、PNG、WebP、GIF）')
+    return
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    ElMessage.warning('图片大小不能超过 5MB')
+    return
+  }
+
+  uploading.value = true
+
+  try {
+    await updatePlaylistCover(form.value.playlistId, file)
+    ElMessage.success('封面更新成功')
+    await fetchPlaylist()
+    window.dispatchEvent(new CustomEvent('playlist-cover-updated', {
+      detail: {
+        playlistId: form.value.playlistId
+      }
+    }))
+  } catch (error) {
+    console.error('更新封面失败', error)
+    ElMessage.error('更新封面失败，请重试')
+  } finally {
+    uploading.value = false
+    if (fileInputRef.value) {
+      fileInputRef.value.value = ''
+    }
+  }
 }
 
 onMounted(() => {
@@ -346,6 +389,10 @@ onMounted(() => {
 .overlay-hint {
   font-size: 12px;
   color: rgba(255, 255, 255, 0.7);
+}
+
+.file-input {
+  display: none;
 }
 
 .form-actions {

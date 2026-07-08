@@ -19,3 +19,9 @@ export const removeSongFromPlaylist = (playlistId, songId) => request.delete(`/p
 export const searchPlaylists = (text, pageNum = 1, pageSize = 20) => request.get('/playlist/search', { params: { text, pageNum, pageSize } })
 
 export const getPlaylistSongs = (playlistId, params) => request.get(`/song/playlist/${playlistId}`, { params })
+
+export const updatePlaylistCover = (playlistId, file) => {
+  const formData = new FormData()
+  formData.append('cover', file)
+  return request.patch(`/playlist/${playlistId}/cover`, formData)
+}
