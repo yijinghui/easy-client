@@ -13,21 +13,21 @@
 
       <router-link to="/home" class="nav-link">
       <div class="nav-item" :class="{ active: $route.path === '/home' }">
-        <el-icon name="House" class="nav-icon"></el-icon>
+        <House class="nav-icon" />
         <span class="nav-text">首页</span>
       </div>
     </router-link>
 
     <router-link to="/rank" class="nav-link">
       <div class="nav-item" :class="{ active: $route.path === '/rank' }">
-        <el-icon name="TrendCharts" class="nav-icon"></el-icon>
+        <TrendCharts class="nav-icon" />
         <span class="nav-text">排行榜</span>
       </div>
     </router-link>
 
     <router-link to="/room" class="nav-link">
         <div class="nav-item" :class="{ active: $route.path === '/room' }">
-          <el-icon name="Headset" class="nav-icon"></el-icon>
+          <Headset class="nav-icon" />
           <span class="nav-text">在线歌间</span>
         </div>
       </router-link>
@@ -44,7 +44,7 @@
           class="nav-link"
         >
           <div class="nav-item" :class="{ active: $route.path === `/${item.key}` }">
-            <el-icon :name="item.icon" class="nav-icon"></el-icon>
+            <component :is="iconMap[item.icon]" class="nav-icon" />
             <span class="nav-text">{{ item.label }}</span>
             <span v-if="item.count" class="nav-count">{{ item.count }}</span>
           </div>
@@ -70,7 +70,7 @@
           >
             收藏歌单
           </span>
-          <el-icon class="tab-add" @click="handleCreatePlaylist">+</el-icon>
+          <Plus class="tab-add" @click="handleCreatePlaylist" />
         </div>
 
         <div class="playlist-list">
@@ -222,9 +222,16 @@ import { getPlaylists, createPlaylist, deletePlaylist } from '@/api/playlist'
 import { getFavoritePlaylists } from '@/api/favorite'
 import { getUserAvatar, getPlaylistCover } from '@/utils/asset'
 import { getAuthToken, removeAuthToken } from '@/utils/auth'
+import { House, TrendCharts, Headset, Star, Clock, User, Search, Plus } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
+
+const iconMap = {
+  Heart: Star,
+  Clock,
+  User
+}
 
 const searchKeyword = ref('')
 const playlistTab = ref('custom')
@@ -620,6 +627,9 @@ const handleSubmitCreate = async () => {
   margin-right: 12px;
   font-size: 16px;
   color: #909399;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 
 .nav-item.active .nav-icon {
@@ -690,6 +700,9 @@ const handleSubmitCreate = async () => {
   font-size: 16px;
   color: #909399;
   cursor: pointer;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 
 .tab-add:hover {

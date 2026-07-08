@@ -149,6 +149,7 @@ import { ElMessage } from 'element-plus'
 import { useRouter, useRoute } from 'vue-router'
 import { usePlayerStore } from '@/stores/player'
 import { collectSong, cancelCollectSong } from '@/api/favorite'
+import { resolveFileUrl } from '@/utils/asset'
 import Playlist from './Playlist.vue'
 
 const router = useRouter()
@@ -160,7 +161,7 @@ const audioRef = ref(null)
 const isDragging = ref(false)
 const isMuted = ref(false)
 const lastVolume = ref(30)
-const defaultCover = 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=music%20note%20icon%20simple%20white%20background&image_size=square'
+const defaultCover = resolveFileUrl('songCovers/default.webp')
 
 const parsedLyrics = ref([])
 const currentLyricIndex = ref(-1)
