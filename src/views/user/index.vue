@@ -211,15 +211,10 @@ const fetchUserInfo = async () => {
   try {
     let res
     const targetUserId = profileUserId.value
-    console.log('fetchUserInfo - targetUserId:', targetUserId, 'route.params:', route.params)
     if (targetUserId) {
-      console.log('调用 getUserInfoById:', targetUserId)
       res = await getUserInfoById(targetUserId)
-      console.log('getUserInfoById 响应:', res)
     } else {
-      console.log('调用 getUserInfo()')
       res = await getUserInfo()
-      console.log('getUserInfo 响应:', res)
     }
     
     if (res && res.data) {
@@ -268,7 +263,7 @@ const handleCertify = () => {
 
 const handleSaveUserInfo = async () => {
   showEditModal.value = false
-  ElMessage.success('资料更新成功')
+  ElMessage.success('编辑成功')
   await fetchUserInfo()
 }
 
@@ -340,7 +335,6 @@ const editPlaylist = (playlistId) => {
 .user-center {
   max-width: 1350px;
   margin: 0 auto;
-  padding: 40px 24px;
 }
 
 .profile-header {

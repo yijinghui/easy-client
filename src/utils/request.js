@@ -34,13 +34,10 @@ request.interceptors.request.use(
   }
 )
 
-// 响应拦截器
 request.interceptors.response.use(
   response => {
     const res = response.data
-    
     // 根据状态码判断请求是否成功
-    // code为0或200都视为成功
     if (res.code === 0 || res.code === 200 || res.code === '0' || res.code === '200') {
       return res
     } else {
@@ -53,18 +50,18 @@ request.interceptors.response.use(
           handleUnauthorized(res.message)
         }
       }
-      return Promise.reject(new Error(res.message || '请求失败'))
+      // 返回一个挂起的 Promise
+      return new Promise(() => {})
     }
   },
   error => {
-    // 如果是服务器响应了数据但状态码不是2xx
+    // HTTP 错误处理
     if (error.response && error.response.data) {
       const res = error.response.data
-      // 401未授权不显示错误提示，由业务层处理
       if (error.response.status !== 401) {
         ElMessage.error(res.message || '请求失败')
       } else {
-        const isSilent401 = error.response.config._silent401
+        const isSilent401 = error.config._silent401
         if (!isSilent401) {
           handleUnauthorized(res.message)
         }
@@ -72,7 +69,8 @@ request.interceptors.response.use(
     } else {
       ElMessage.error(error.message || '网络错误')
     }
-    return Promise.reject(error)
+    // 关键修改：不抛出错误
+    return new Promise(() => {})
   }
 )
 

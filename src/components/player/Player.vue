@@ -52,9 +52,9 @@
     </div>
     
     <!-- 底部播放栏 -->
-    <footer class="player-bar" @click="toggleExpand">
+    <footer class="player-bar" >
       <!-- 左侧：封面和歌曲信息 -->
-      <div class="player-left">
+      <div class="player-left" @click="toggleExpand">
         <div class="cover-wrapper">
           <img :src="playerStore.currentSong.cover || defaultCover" class="player-cover" />
         </div>

@@ -107,7 +107,7 @@ const handleSubmit = async () => {
     })
     emit('save', editForm.value)
   } catch (error) {
-    ElMessage.error('更新失败，请重试')
+    ElMessage.error(error.message || '编辑失败，请重试')
   }
 }
 </script>
