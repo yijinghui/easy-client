@@ -17,7 +17,7 @@
         <h4 class="playlist-name">{{ playlist.name }}</h4>
         <p class="playlist-meta">{{ playlist.songCount }} 首歌曲</p>
       </div>
-      <div class="playlist-actions-card">
+      <div v-if="!props.userId" class="playlist-actions-card">
         <span class="action-btn" @click.stop="emit('edit-playlist', playlist.id)">编辑</span>
         <span class="action-btn delete" @click.stop="handleDeletePlaylist(playlist)">删除</span>
       </div>
@@ -26,11 +26,18 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getUserPlaylists, deletePlaylist } from '@/api/playlist'
 import { getPlaylistCover } from '@/utils/asset'
 import { getCurrentUserId } from '@/utils/auth'
+
+const props = defineProps({
+  userId: {
+    type: [Number, String],
+    default: null
+  }
+})
 
 const emit = defineEmits(['go-to-playlist', 'edit-playlist', 'delete-playlist'])
 
@@ -40,10 +47,10 @@ const loading = ref(false)
 const fetchCreatedPlaylists = async () => {
   loading.value = true
   try {
-    const userId = getCurrentUserId()
-    if (!userId) return
+    const targetUserId = props.userId || getCurrentUserId()
+    if (!targetUserId) return
     
-    const res = await getUserPlaylists(userId)
+    const res = await getUserPlaylists(targetUserId)
     if (res.data) {
       playlists.value = res.data.map(playlist => ({
         id: playlist.playlistId,
@@ -58,6 +65,13 @@ const fetchCreatedPlaylists = async () => {
     loading.value = false
   }
 }
+
+watch(
+  () => props.userId,
+  () => {
+    fetchCreatedPlaylists()
+  }
+)
 
 const handleDeletePlaylist = async (playlist) => {
   try {

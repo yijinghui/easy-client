@@ -8,7 +8,7 @@
         <div class="col-duration">时长</div>
         <div class="col-action"></div>
       </div>
-      <div v-for="song in recentSongs" :key="song.id" class="favorite-item">
+      <div v-for="(song, index) in recentSongs" :key="song.id" class="favorite-item">
         <div class="song-info">
           <div class="cover-wrapper">
             <img :src="song.cover" class="small-cover" />
@@ -27,7 +27,7 @@
           <div class="action-btn" @click.stop="toggleMenu(song.id)">
             <span class="action-icon">⋮</span>
           </div>
-          <div v-if="activeMenu === song.id" class="action-menu" @click.stop>
+          <div v-if="activeMenu === song.id" :class="['action-menu', { 'action-menu-up': index >= recentSongs.length - 3 }]" @click.stop>
             <div class="menu-item" @click="addToPlayQueue(song)">
               <span>添加到播放队列</span>
             </div>
@@ -354,6 +354,13 @@ const deleteRecord = async (songId) => {
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
   z-index: 100;
   min-width: 140px;
+}
+
+.action-menu-up {
+  top: auto;
+  bottom: 100%;
+  margin-top: 0;
+  margin-bottom: 4px;
 }
 
 .menu-item {

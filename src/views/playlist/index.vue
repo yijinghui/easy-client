@@ -20,25 +20,27 @@
             <span class="tag-item">{{ playlist.style }}</span>
           </div>
           <div class="playlist-actions">
-          <button class="play-all-btn" @click="playAll">
-            播放全部
-          </button>
-          <button 
-            class="favorite-btn" 
-            :class="{ active: playlist.isFavorite }" 
-            @click="toggleFavorite"
-          >
-            {{ playlist.isFavorite ? '已收藏' : '收藏' }}
-          </button>
-          <template v-if="isOwnPlaylist">
-            <button class="edit-btn" @click="handleEdit">
-              编辑
+            <button class="play-all-btn" @click="playAll" title="播放全部">
+              <el-icon :size="16"><Headset /></el-icon>
+              播放全部
             </button>
-            <button class="delete-btn" @click="handleDelete">
-              删除
+            <button 
+              class="icon-btn favorite-btn" 
+              :class="{ active: playlist.isFavorite }" 
+              @click="toggleFavorite"
+              :title="playlist.isFavorite ? '取消收藏' : '收藏'"
+            >
+              <el-icon :size="18"><Star /></el-icon>
             </button>
-          </template>
-        </div>
+            <template v-if="isOwnPlaylist">
+              <button class="icon-btn edit-btn" @click="handleEdit" title="编辑">
+                <el-icon :size="18"><Edit /></el-icon>
+              </button>
+              <button class="icon-btn delete-btn" @click="handleDelete" title="删除">
+                <el-icon :size="18"><Delete /></el-icon>
+              </button>
+            </template>
+          </div>
         </div>
       </div>
 
@@ -49,7 +51,6 @@
         </div>
         <div class="songs-list">
           <div class="list-header">
-            <div class="col-index">#</div>
             <div class="col-title">歌名</div>
             <div class="col-artist">歌手</div>
             <div class="col-album">专辑</div>
@@ -62,10 +63,6 @@
             class="song-item"
             :class="{ playing: playerStore.currentSong?.id === song.id }"
           >
-            <div class="col-index">
-              <span class="song-index">{{ index + 1 }}</span>
-              <el-icon v-if="playerStore.currentSong?.id === song.id" name="Playing" class="playing-icon" />
-            </div>
             <div class="col-title">
               <div class="cover-wrapper">
                 <img :src="song.cover" class="small-cover" />
@@ -83,6 +80,23 @@
             <div class="col-duration">{{ formatDuration(song.duration) }}</div>
             <div class="col-action">
               <span class="action-icon like-icon" :class="{ liked: song.isFavorite }" @click="toggleSongFavorite(song)">♡</span>
+              <div class="action-btn" @click.stop="toggleMenu(song.id)">
+                <span class="action-icon">⋮</span>
+              </div>
+              <div v-if="activeMenu === song.id" :class="['action-menu', { 'action-menu-up': index >= songs.length - 3 }]" @click.stop>
+                <div v-if="isOwnPlaylist" class="menu-item" @click="handleRemoveSongFromPlaylist(song)">
+                  <span>从歌单中移除</span>
+                </div>
+                <div class="menu-item" @click="handleAddToPlaylist(song)">
+                  <span>加入歌单</span>
+                </div>
+                <div class="menu-item" @click="song.isFavorite ? handleRemoveFromFavorite(song) : handleAddToFavorite(song)">
+                  <span>{{ song.isFavorite ? '取消收藏' : '加入我喜欢' }}</span>
+                </div>
+                <div class="menu-item" @click="handleAddToQueue(song)">
+                  <span>添加到播放列表</span>
+                </div>
+              </div>
             </div>
           </div>
           <div v-if="songs.length === 0" class="empty-state">
@@ -94,6 +108,22 @@
     <div v-else class="empty-state">
       <span>歌单不存在或已被删除</span>
     </div>
+
+    <el-dialog title="选择歌单" v-model="showAddToPlaylistModal" width="400px">
+      <div v-if="userPlaylists.length === 0" class="empty-state">
+        <span>暂无歌单</span>
+      </div>
+      <div v-else class="playlist-list">
+        <div 
+          v-for="pl in userPlaylists" 
+          :key="pl.id" 
+          class="playlist-item"
+          @click="confirmAddToPlaylist(pl.id)"
+        >
+          <span>{{ pl.name }}</span>
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -101,8 +131,9 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Star, Edit, Delete, Headset } from '@element-plus/icons-vue'
 import { usePlayerStore } from '@/stores/player'
-import { getPlaylistSongs, getPlaylistDetail } from '@/api/playlist'
+import { getPlaylistSongs, getPlaylistDetail, removeSongFromPlaylist, getUserPlaylists, addSongToPlaylist } from '@/api/playlist'
 import { collectPlaylist, cancelCollectPlaylist, collectSong, cancelCollectSong } from '@/api/favorite'
 import { getSongAudio, getSongCover, getPlaylistCover } from '@/utils/asset'
 import { getCurrentUserId } from '@/utils/auth'
@@ -115,6 +146,10 @@ const playerStore = usePlayerStore()
 const playlist = ref(null)
 const songs = ref([])
 const loading = ref(true)
+const userPlaylists = ref([])
+const showAddToPlaylistModal = ref(false)
+const currentSongForPlaylist = ref(null)
+const activeMenu = ref(null)
 
 const isOwnPlaylist = computed(() => {
   if (!playlist.value) return false
@@ -304,6 +339,95 @@ const handleDelete = async () => {
     }
   }
 }
+
+const toggleMenu = (songId) => {
+  activeMenu.value = activeMenu.value === songId ? null : songId
+}
+
+const handleRemoveSongFromPlaylist = async (song) => {
+  try {
+    await removeSongFromPlaylist(playlist.value.id, song.id)
+    songs.value = songs.value.filter(s => s.id !== song.id)
+    playlist.value.songCount = songs.value.length
+    activeMenu.value = null
+    ElMessage.success('已从歌单中移除')
+  } catch (error) {
+    console.error('移除歌曲失败', error)
+    ElMessage.error('操作失败')
+  }
+}
+
+const handleAddToPlaylist = async (song) => {
+  const userId = getCurrentUserId()
+  if (!userId) {
+    ElMessage.info('请先登录')
+    router.push('/login')
+    return
+  }
+
+  try {
+    const res = await getUserPlaylists(userId)
+    userPlaylists.value = res.data?.map(p => ({
+      id: p.playlistId,
+      name: p.title || ''
+    })) || []
+    currentSongForPlaylist.value = song
+    showAddToPlaylistModal.value = true
+    activeMenu.value = null
+  } catch (error) {
+    console.error('获取歌单列表失败', error)
+    ElMessage.error('操作失败')
+  }
+}
+
+const confirmAddToPlaylist = async (targetPlaylistId) => {
+  if (!currentSongForPlaylist.value) return
+
+  try {
+    await addSongToPlaylist(targetPlaylistId, currentSongForPlaylist.value.id)
+    showAddToPlaylistModal.value = false
+    ElMessage.success('已添加到歌单')
+  } catch (error) {
+    console.error('添加到歌单失败', error)
+    ElMessage.error('操作失败')
+  }
+}
+
+const handleAddToFavorite = async (song) => {
+  try {
+    await collectSong(song.id)
+    song.isFavorite = true
+    activeMenu.value = null
+    ElMessage.success('已加入我喜欢')
+    window.dispatchEvent(new CustomEvent('favorite-updated', {
+      detail: { type: 'add', songId: song.id, song }
+    }))
+  } catch (error) {
+    console.error('添加收藏失败', error)
+    ElMessage.error('操作失败')
+  }
+}
+
+const handleRemoveFromFavorite = async (song) => {
+  try {
+    await cancelCollectSong(song.id)
+    song.isFavorite = false
+    activeMenu.value = null
+    ElMessage.success('已取消收藏')
+    window.dispatchEvent(new CustomEvent('favorite-updated', {
+      detail: { type: 'remove', songId: song.id }
+    }))
+  } catch (error) {
+    console.error('取消收藏失败', error)
+    ElMessage.error('操作失败')
+  }
+}
+
+const handleAddToQueue = async (song) => {
+  playerStore.addToPlayQueue(song)
+  activeMenu.value = null
+  ElMessage.success('已加入播放列表')
+}
 </script>
 
 <style scoped>
@@ -398,91 +522,81 @@ const handleDelete = async () => {
 
 .playlist-actions {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   margin-top: auto;
   align-items: center;
+}
+
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
 }
 
 .play-all-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 20px;
-  background: #fff;
-  border: 1px solid #409eff;
-  color: #409eff;
+  gap: 6px;
+  padding: 6px 12px;
+  background: transparent;
+  border: none;
+  color: #909399;
   font-size: 14px;
   font-weight: 500;
-  border-radius: 4px;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .play-all-btn:hover {
   background: #e8f0fe;
-  border-color: #66b1ff;
-}
-
-.play-all-btn .play-icon {
-  font-size: 14px;
 }
 
 .favorite-btn {
-  padding: 6px 20px;
-  background: #f5f7fa;
-  border: 1px solid #d9d9d9;
-  color: #606266;
-  font-size: 14px;
-  font-weight: 500;
-  border-radius: 4px;
+  color: #909399;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .favorite-btn:hover {
-  border-color: #e6a23c;
+  background: rgba(230, 162, 60, 0.1);
   color: #e6a23c;
 }
 
 .favorite-btn.active {
-  background: #fdf6ec;
-  border-color: #e6a23c;
   color: #e6a23c;
 }
 
+.favorite-btn.active:hover {
+  background: rgba(230, 162, 60, 0.1);
+}
+
 .edit-btn {
-  padding: 6px 20px;
-  background: #f5f7fa;
-  border: 1px solid #d9d9d9;
-  color: #606266;
-  font-size: 14px;
-  font-weight: 500;
-  border-radius: 4px;
+  color: #909399;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .edit-btn:hover {
-  border-color: #409eff;
+  background: #f0f5ff;
   color: #409eff;
 }
 
 .delete-btn {
-  padding: 6px 20px;
-  background: #fef0f0;
-  border: 1px solid #f56c6c;
-  color: #f56c6c;
-  font-size: 14px;
-  font-weight: 500;
-  border-radius: 4px;
+  color: #909399;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .delete-btn:hover {
-  background: #fde2e2;
-  border-color: #e85d5d;
-  color: #e85d5d;
+  background: #fef0f0;
+  color: #f56c6c;
 }
 
 .playlist-songs {
@@ -557,7 +671,7 @@ const handleDelete = async () => {
 }
 
 .list-header .col-action {
-  width: 40px;
+  width: 80px;
   flex-shrink: 0;
 }
 
@@ -699,24 +813,18 @@ const handleDelete = async () => {
 }
 
 .song-item .col-action {
-  width: 40px;
+  width: 80px;
   display: flex;
-  justify-content: center;
+  justify-content: flex-end;
+  align-items: center;
   flex-shrink: 0;
+  position: relative;
 }
 
 .action-icon {
-  font-size: 16px;
-  color: #475569;
+  font-size: 20px;
+  color: #909399;
   cursor: pointer;
-  transition: all 0.2s;
-  padding: 4px;
-  border-radius: 50%;
-}
-
-.action-icon:hover {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
 }
 
 .like-icon {
@@ -724,17 +832,76 @@ const handleDelete = async () => {
   color: #909399;
   cursor: pointer;
   transition: all 0.2s;
-  padding: 4px;
-  border-radius: 50%;
+  margin-right: 16px;
 }
 
 .like-icon:hover {
   color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
 }
 
 .like-icon.liked {
   color: #ef4444;
+}
+
+.action-btn {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.action-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 4px;
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  min-width: 140px;
+}
+
+.action-menu-up {
+  top: auto;
+  bottom: 100%;
+  margin-top: 0;
+  margin-bottom: 4px;
+}
+
+.menu-item {
+  padding: 8px 16px;
+  font-size: 13px;
+  color: #303133;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.menu-item:hover {
+  background: #f5f7fa;
+}
+
+.playlist-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.playlist-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.playlist-item:hover {
+  background: #f5f7fa;
+}
+
+.playlist-item span {
+  font-size: 14px;
+  color: #303133;
 }
 
 .empty-state {

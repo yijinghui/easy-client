@@ -22,9 +22,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { getFavoritePlaylists } from '@/api/favorite'
+import { ref, onMounted, watch } from 'vue'
+import { getFavoritePlaylists, getFavoritePlaylistsByUserId } from '@/api/favorite'
 import { getPlaylistCover } from '@/utils/asset'
+
+const props = defineProps({
+  userId: {
+    type: [Number, String],
+    default: null
+  }
+})
 
 const emit = defineEmits(['go-to-playlist'])
 
@@ -34,7 +41,12 @@ const loading = ref(false)
 const fetchFavoritePlaylists = async () => {
   loading.value = true
   try {
-    const res = await getFavoritePlaylists({ pageNum: 1, pageSize: 100 })
+    let res
+    if (props.userId) {
+      res = await getFavoritePlaylistsByUserId(props.userId, { pageNum: 1, pageSize: 100 })
+    } else {
+      res = await getFavoritePlaylists({ pageNum: 1, pageSize: 100 })
+    }
     if (res.data && res.data.items) {
       playlists.value = res.data.items.map(playlist => ({
         id: playlist.playlistId,
@@ -49,6 +61,13 @@ const fetchFavoritePlaylists = async () => {
     loading.value = false
   }
 }
+
+watch(
+  () => props.userId,
+  () => {
+    fetchFavoritePlaylists()
+  }
+)
 
 onMounted(() => {
   fetchFavoritePlaylists()

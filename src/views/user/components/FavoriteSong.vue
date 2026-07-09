@@ -5,7 +5,6 @@
   </div>
   <div v-else class="favorite-songs-list">
     <div class="list-header">
-      <div class="col-index">#</div>
       <div class="col-title">歌名</div>
       <div class="col-artist">歌手</div>
       <div class="col-album">专辑</div>
@@ -19,10 +18,6 @@
       :class="{ playing: currentSongId === song.id }"
       @click="emit('play-song', song, index, songs)"
     >
-      <div class="col-index">
-        <span class="song-index">{{ index + 1 }}</span>
-        <el-icon v-if="currentSongId === song.id" name="Playing" class="playing-icon" />
-      </div>
       <div class="col-title">
         <div class="cover-wrapper">
           <img :src="song.cover" class="small-cover" />
@@ -39,20 +34,27 @@
       <div class="col-album">{{ song.album }}</div>
       <div class="col-duration">{{ formatDuration(song.duration) }}</div>
       <div class="col-action">
-        <span class="action-icon like-icon liked" @click.stop="handleToggleFavorite(song)">♡</span>
+        <span class="action-icon like-icon {{ song.isFavorite ? 'liked' : '' }}" 
+        :class="{ liked: song.isFavorite }" 
+        @click.stop="handleToggleFavorite(song)">♡</span>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { ElIcon, ElMessage } from 'element-plus'
-import { getFavoriteSongs, cancelCollectSong } from '@/api/favorite'
+import { getFavoriteSongs, getFavoriteSongsByUserId, cancelCollectSong, collectSong } from '@/api/favorite'
 import { getSongCover } from '@/utils/asset'
+import { getCurrentUserId } from '@/utils/auth'
 
-defineProps({
+const props = defineProps({
   currentSongId: {
+    type: [Number, String],
+    default: null
+  },
+  userId: {
     type: [Number, String],
     default: null
   }
@@ -66,7 +68,12 @@ const loading = ref(false)
 const fetchFavoriteSongs = async () => {
   loading.value = true
   try {
-    const res = await getFavoriteSongs({ pageNum: 1, pageSize: 100 })
+    let res
+    if (props.userId) {
+      res = await getFavoriteSongsByUserId(props.userId, { pageNum: 1, pageSize: 100 })
+    } else {
+      res = await getFavoriteSongs({ pageNum: 1, pageSize: 100 })
+    }
     if (res.data && res.data.items) {
       songs.value = res.data.items.map(song => ({
         id: song.songId,
@@ -76,7 +83,7 @@ const fetchFavoriteSongs = async () => {
         cover: getSongCover(song.coverUrl),
         url: song.audioUrl,
         duration: parseFloat(song.duration) || 0,
-        isFavorite: true
+        isFavorite: song.isFavorite
       }))
     }
   } catch (error) {
@@ -85,6 +92,13 @@ const fetchFavoriteSongs = async () => {
     loading.value = false
   }
 }
+
+watch(
+  () => props.userId,
+  () => {
+    fetchFavoriteSongs()
+  }
+)
 
 const formatDuration = (seconds) => {
   if (!seconds) return '--:--'
@@ -95,9 +109,17 @@ const formatDuration = (seconds) => {
 
 const handleToggleFavorite = async (song) => {
   try {
-    await cancelCollectSong(song.id)
-    song.isFavorite = false
-    songs.value = songs.value.filter(s => s.id !== song.id)
+    if(song.isFavorite) {
+        await cancelCollectSong(song.id)
+        song.isFavorite = false
+    }else {
+        await collectSong(song.id)
+        song.isFavorite = true
+    }
+    
+    if (props.userId === getCurrentUserId()) {
+      songs.value = songs.value.filter(s => s.id !== song.id)
+    }
     ElMessage.success('已取消收藏')
     window.dispatchEvent(new CustomEvent('favorite-updated', {
       detail: { type: 'remove', songId: song.id }
@@ -336,7 +358,6 @@ onMounted(() => {
 
 .action-icon:hover {
   color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
 }
 
 .like-icon {
@@ -350,7 +371,6 @@ onMounted(() => {
 
 .like-icon:hover {
   color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
 }
 
 .like-icon.liked {

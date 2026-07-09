@@ -33,7 +33,8 @@ const routes = [
       {path: '/recent',name: 'recent',component: RecentView, meta: { requiresAuth: true }},
       {path: '/search', name: 'search', component: SearchView},
       {path: '/comment/:songId', name: 'comment', component: CommentView},
-      {path: '/user', name: 'user', component: UserView, meta: { requiresAuth: true }},
+      {path: '/user/:userId', name: 'userDetail', component: UserView, meta: { requiresAuth: true }},
+{path: '/user', name: 'user', component: UserView, meta: { requiresAuth: true }},
       {path: '/playlist/edit/:id', name: 'playlistEdit', component: PlaylistEditView, meta: { requiresAuth: true }},
       {path: '/playlist/:id', name: 'playlist', component: PlaylistView},
     ]

@@ -32,9 +32,15 @@ export const register = (data) => request.post('/register',data);
 export const logout = () => request.post('/logout');
 
 /**
- * 获取用户信息
+ * 获取当前用户信息
  */
 export const getUserInfo = () => request.get('/me');
+
+/**
+ * 获取指定用户信息
+ * @param {number} userId - 用户ID
+ */
+export const getUserInfoById = (userId) => request.get(`/info/${userId}`);
 
 /**
  * 更新用户基本信息

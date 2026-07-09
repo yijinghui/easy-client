@@ -2,10 +2,10 @@
   <div class="user-center">
     <div class="profile-header">
       <div class="header-actions">
-        <div class="action-icon-wrapper" @click="showEditModal = true" title="编辑资料">
+        <div v-if="isOwnProfile" class="action-icon-wrapper" @click="showEditModal = true" title="编辑资料">
           <el-icon :size="20"><Edit /></el-icon>
         </div>
-        <div class="action-icon-wrapper logout" @click="handleLogout" title="退出登录">
+        <div v-if="isOwnProfile" class="action-icon-wrapper logout" @click="handleLogout" title="退出登录">
           <el-icon :size="20"><SwitchButton /></el-icon>
         </div>
       </div>
@@ -103,17 +103,20 @@
         <FavoriteSong 
           v-if="favoriteSubTab === 'songs'"
           :current-song-id="playerStore.currentSong?.id"
+          :user-id="profileUserId"
           @play-song="playSong"
         />
 
         <FavoritePlaylist 
           v-else-if="favoriteSubTab === 'playlists'"
+          :user-id="profileUserId"
           @go-to-playlist="goToPlaylist"
         />
       </div>
 
       <div v-else-if="activeTab === 'created'" class="tab-content">
         <CreatedPlaylist 
+          :user-id="profileUserId"
           @go-to-playlist="goToPlaylist"
           @edit-playlist="editPlaylist"
         />
@@ -131,10 +134,10 @@
 
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { User, Edit, SwitchButton } from '@element-plus/icons-vue'
-import { getUserInfo, logout, certifyArtist, updateUserAvatar } from '@/api/user'
+import { getUserInfo, getUserInfoById, logout, certifyArtist, updateUserAvatar } from '@/api/user'
 import { getUserAvatar } from '@/utils/asset'
 import { removeAuthToken, getCurrentUserId } from '@/utils/auth'
 import { usePlayerStore } from '@/stores/player'
@@ -144,6 +147,7 @@ import FavoritePlaylist from './components/FavoritePlaylist.vue'
 import CreatedPlaylist from './components/CreatedPlaylist.vue'
 
 const router = useRouter()
+const route = useRoute()
 const playerStore = usePlayerStore()
 
 const userInfo = ref({
@@ -170,6 +174,10 @@ const isOwnProfile = computed(() => {
   return String(userInfo.value.userId) === getCurrentUserId()
 })
 
+const profileUserId = computed(() => {
+  return route.params.userId || null
+})
+
 const copyEmail = async () => {
   if (!userInfo.value.email) return
   try {
@@ -179,6 +187,17 @@ const copyEmail = async () => {
     ElMessage.error('复制失败')
   }
 }
+
+watch(
+  () => route.params.userId,
+  (newUserId, oldUserId) => {
+    console.log('路由参数变化 - newUserId:', newUserId, 'oldUserId:', oldUserId)
+    if (newUserId !== oldUserId) {
+      fetchUserInfo()
+    }
+  },
+  { immediate: false }
+)
 
 onMounted(() => {
   fetchUserInfo()
@@ -190,8 +209,21 @@ const switchTab = (tab) => {
 
 const fetchUserInfo = async () => {
   try {
-    const res = await getUserInfo()
-    if (res.data) {
+    let res
+    const targetUserId = profileUserId.value
+    console.log('fetchUserInfo - targetUserId:', targetUserId, 'route.params:', route.params)
+    if (targetUserId) {
+      console.log('调用 getUserInfoById:', targetUserId)
+      res = await getUserInfoById(targetUserId)
+      console.log('getUserInfoById 响应:', res)
+    } else {
+      console.log('调用 getUserInfo()')
+      res = await getUserInfo()
+      console.log('getUserInfo 响应:', res)
+    }
+    
+    if (res && res.data) {
+      console.log('设置 userInfo:', res.data)
       userInfo.value = {
         userId: res.data.userId || 0,
         username: res.data.username || '',
