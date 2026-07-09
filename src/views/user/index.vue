@@ -13,7 +13,7 @@
         <el-avatar :size="120" :src="userInfo.userAvatar" class="profile-avatar">
           <User v-if="!userInfo.userAvatar" />
         </el-avatar>
-        <a class="change-avatar-link" @click="triggerAvatarUpload">更换头像</a>
+        <a v-if="isOwnProfile" class="change-avatar-link" @click="triggerAvatarUpload">更换头像</a>
         <input 
           ref="avatarInput" 
           type="file" 
@@ -44,20 +44,21 @@
           </el-tag>
         </div>
         <p class="profile-intro">{{ userInfo.introduction || '暂无简介' }}</p>
+        <p v-if="isOwnProfile && userInfo.email" class="email" @click="copyEmail">{{ userInfo.email }}</p>
         <div class="profile-stats">
           <div class="stat-item">
-            <span class="stat-value">{{ userInfo.followCount }}</span>
-            <span class="stat-label">关注</span>
+            <span class="stat-value">{{ userInfo.favoriteSongCount }}</span>
+            <span class="stat-label">收藏歌曲</span>
           </div>
           <div class="stat-divider"></div>
           <div class="stat-item">
-            <span class="stat-value">{{ userInfo.fansCount }}</span>
-            <span class="stat-label">粉丝</span>
+            <span class="stat-value">{{ userInfo.favoritePlaylistCount }}</span>
+            <span class="stat-label">收藏歌单</span>
           </div>
           <div class="stat-divider"></div>
           <div class="stat-item">
-            <span class="stat-value">{{ userInfo.visitorCount }}</span>
-            <span class="stat-label">访客</span>
+            <span class="stat-value">{{ userInfo.createdPlaylistCount }}</span>
+            <span class="stat-label">创建歌单</span>
           </div>
         </div>
       </div>
@@ -86,121 +87,36 @@
           <span 
             class="tab-item" 
             :class="{ active: favoriteSubTab === 'songs' }"
-            @click="switchFavoriteSubTab('songs')"
+            @click="favoriteSubTab = 'songs'"
           >
             歌曲
           </span>
           <span 
             class="tab-item" 
             :class="{ active: favoriteSubTab === 'playlists' }"
-            @click="switchFavoriteSubTab('playlists')"
+            @click="favoriteSubTab = 'playlists'"
           >
             歌单
           </span>
         </div>
 
-        <div v-if="favoriteSubTab === 'songs'">
-          <div v-if="loadingFavoriteSongs" class="loading-state">加载中...</div>
-          <div v-else-if="favoriteSongs.length === 0" class="empty-state">
-            <span>暂无收藏歌曲</span>
-          </div>
-          <div v-else class="favorite-songs-list">
-            <div class="list-header">
-              <div class="col-index">#</div>
-              <div class="col-title">歌名</div>
-              <div class="col-artist">歌手</div>
-              <div class="col-album">专辑</div>
-              <div class="col-duration">时长</div>
-              <div class="col-action"></div>
-            </div>
-            <div 
-              v-for="(song, index) in favoriteSongs" 
-              :key="song.id" 
-              class="song-item"
-              :class="{ playing: playerStore.currentSong?.id === song.id }"
-              @click="playSong(song, index)"
-            >
-              <div class="col-index">
-                <span class="song-index">{{ index + 1 }}</span>
-                <el-icon v-if="playerStore.currentSong?.id === song.id" name="Playing" class="playing-icon" />
-              </div>
-              <div class="col-title">
-                <div class="cover-wrapper">
-                  <img :src="song.cover" class="small-cover" />
-                  <div class="play-overlay">
-                    <span class="play-icon">▶</span>
-                  </div>
-                </div>
-                <div class="song-detail">
-                  <span class="song-name">{{ song.name }}</span>
-                  <span class="song-album-text">{{ song.album }}</span>
-                </div>
-              </div>
-              <div class="col-artist">{{ song.artist }}</div>
-              <div class="col-album">{{ song.album }}</div>
-              <div class="col-duration">{{ formatDuration(song.duration) }}</div>
-              <div class="col-action">
-                <span class="action-icon like-icon liked" @click.stop="toggleSongFavorite(song)">♡</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        <FavoriteSong 
+          v-if="favoriteSubTab === 'songs'"
+          :current-song-id="playerStore.currentSong?.id"
+          @play-song="playSong"
+        />
 
-        <div v-else-if="favoriteSubTab === 'playlists'">
-          <div v-if="loadingFavoritePlaylists" class="loading-state">加载中...</div>
-          <div v-else-if="favoritePlaylists.length === 0" class="empty-state">
-            <span>暂无收藏歌单</span>
-          </div>
-          <div v-else class="favorite-playlists-grid">
-            <div 
-              v-for="playlist in favoritePlaylists" 
-              :key="playlist.id" 
-              class="playlist-card"
-              @click="goToPlaylist(playlist.id)"
-            >
-              <div class="playlist-cover">
-                <img :src="playlist.cover" :alt="playlist.name" />
-                <div class="playlist-play-overlay">
-                  <span class="play-btn">▶</span>
-                </div>
-              </div>
-              <div class="playlist-info">
-                <h4 class="playlist-name">{{ playlist.name }}</h4>
-                <p class="playlist-meta">{{ playlist.songCount }} 首歌曲</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <FavoritePlaylist 
+          v-else-if="favoriteSubTab === 'playlists'"
+          @go-to-playlist="goToPlaylist"
+        />
       </div>
 
       <div v-else-if="activeTab === 'created'" class="tab-content">
-        <div v-if="loadingCreatedPlaylists" class="loading-state">加载中...</div>
-        <div v-else-if="createdPlaylists.length === 0" class="empty-state">
-          <span>暂无创建的歌单</span>
-        </div>
-        <div v-else class="created-playlists-grid">
-          <div 
-            v-for="playlist in createdPlaylists" 
-            :key="playlist.id" 
-            class="playlist-card"
-            @click="goToPlaylist(playlist.id)"
-          >
-            <div class="playlist-cover">
-              <img :src="playlist.cover" :alt="playlist.name" />
-              <div class="playlist-play-overlay">
-                <span class="play-btn">▶</span>
-              </div>
-            </div>
-            <div class="playlist-info">
-              <h4 class="playlist-name">{{ playlist.name }}</h4>
-              <p class="playlist-meta">{{ playlist.songCount }} 首歌曲</p>
-            </div>
-            <div class="playlist-actions-card">
-              <span class="action-btn" @click.stop="editPlaylist(playlist.id)">编辑</span>
-              <span class="action-btn delete" @click.stop="deletePlaylistItem(playlist)">删除</span>
-            </div>
-          </div>
-        </div>
+        <CreatedPlaylist 
+          @go-to-playlist="goToPlaylist"
+          @edit-playlist="editPlaylist"
+        />
       </div>
     </div>
 
@@ -214,17 +130,18 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { User, Edit, SwitchButton } from '@element-plus/icons-vue'
 import { getUserInfo, logout, certifyArtist, updateUserAvatar } from '@/api/user'
-import { getUserAvatar, getSongCover, getPlaylistCover } from '@/utils/asset'
+import { getUserAvatar } from '@/utils/asset'
 import { removeAuthToken, getCurrentUserId } from '@/utils/auth'
 import { usePlayerStore } from '@/stores/player'
-import { getFavoriteSongs, getFavoritePlaylists, cancelCollectSong } from '@/api/favorite'
-import { getUserPlaylists, deletePlaylist } from '@/api/playlist'
 import UserEditModal from './components/UserEditModal.vue'
+import FavoriteSong from './components/FavoriteSong.vue'
+import FavoritePlaylist from './components/FavoritePlaylist.vue'
+import CreatedPlaylist from './components/CreatedPlaylist.vue'
 
 const router = useRouter()
 const playerStore = usePlayerStore()
@@ -249,13 +166,19 @@ const avatarInput = ref(null)
 const activeTab = ref('favorite')
 const favoriteSubTab = ref('songs')
 
-const favoriteSongs = ref([])
-const favoritePlaylists = ref([])
-const createdPlaylists = ref([])
+const isOwnProfile = computed(() => {
+  return String(userInfo.value.userId) === getCurrentUserId()
+})
 
-const loadingFavoriteSongs = ref(false)
-const loadingFavoritePlaylists = ref(false)
-const loadingCreatedPlaylists = ref(false)
+const copyEmail = async () => {
+  if (!userInfo.value.email) return
+  try {
+    await navigator.clipboard.writeText(userInfo.value.email)
+    ElMessage.success('邮箱已复制到剪贴板')
+  } catch (error) {
+    ElMessage.error('复制失败')
+  }
+}
 
 onMounted(() => {
   fetchUserInfo()
@@ -263,18 +186,6 @@ onMounted(() => {
 
 const switchTab = (tab) => {
   activeTab.value = tab
-  if (tab === 'created') {
-    fetchCreatedPlaylists()
-  }
-}
-
-const switchFavoriteSubTab = (subTab) => {
-  favoriteSubTab.value = subTab
-  if (subTab === 'songs') {
-    fetchFavoriteSongs()
-  } else if (subTab === 'playlists') {
-    fetchFavoritePlaylists()
-  }
 }
 
 const fetchUserInfo = async () => {
@@ -290,6 +201,7 @@ const fetchUserInfo = async () => {
         introduction: res.data.introduction || '',
         favoriteSongCount: res.data.favoriteSongCount || 0,
         favoritePlaylistCount: res.data.favoritePlaylistCount || 0,
+        createdPlaylistCount: res.data.createdPlaylistCount || 0,
         followCount: res.data.followCount || 0,
         fansCount: res.data.fansCount || 0,
         visitorCount: res.data.visitorCount || 0,
@@ -299,70 +211,6 @@ const fetchUserInfo = async () => {
   } catch (error) {
     console.error('获取用户信息失败', error)
     ElMessage.error('获取用户信息失败')
-  }
-}
-
-const fetchFavoriteSongs = async () => {
-  loadingFavoriteSongs.value = true
-  try {
-    const res = await getFavoriteSongs({ pageNum: 1, pageSize: 100 })
-    if (res.data && res.data.items) {
-      favoriteSongs.value = res.data.items.map(song => ({
-        id: song.songId,
-        name: song.songName,
-        artist: song.artistName,
-        album: song.album,
-        cover: getSongCover(song.coverUrl),
-        url: song.audioUrl,
-        duration: parseFloat(song.duration) || 0,
-        isFavorite: true
-      }))
-    }
-  } catch (error) {
-    console.error('获取收藏歌曲失败', error)
-  } finally {
-    loadingFavoriteSongs.value = false
-  }
-}
-
-const fetchFavoritePlaylists = async () => {
-  loadingFavoritePlaylists.value = true
-  try {
-    const res = await getFavoritePlaylists({ pageNum: 1, pageSize: 100 })
-    if (res.data && res.data.items) {
-      favoritePlaylists.value = res.data.items.map(playlist => ({
-        id: playlist.playlistId,
-        name: playlist.title || playlist.name || '',
-        cover: getPlaylistCover(playlist.coverUrl),
-        songCount: playlist.songCount || 0
-      }))
-    }
-  } catch (error) {
-    console.error('获取收藏歌单失败', error)
-  } finally {
-    loadingFavoritePlaylists.value = false
-  }
-}
-
-const fetchCreatedPlaylists = async () => {
-  loadingCreatedPlaylists.value = true
-  try {
-    const userId = getCurrentUserId()
-    if (!userId) return
-    
-    const res = await getUserPlaylists(userId)
-    if (res.data) {
-      createdPlaylists.value = res.data.map(playlist => ({
-        id: playlist.playlistId,
-        name: playlist.title || '',
-        cover: getPlaylistCover(playlist.coverUrl),
-        songCount: playlist.songCount || 0
-      }))
-    }
-  } catch (error) {
-    console.error('获取创建的歌单失败', error)
-  } finally {
-    loadingCreatedPlaylists.value = false
   }
 }
 
@@ -442,31 +290,9 @@ const handleLogout = () => {
   })
 }
 
-const formatDuration = (seconds) => {
-  if (!seconds) return '--:--'
-  const mins = Math.floor(seconds / 60)
-  const secs = Math.floor(seconds % 60)
-  return `${mins}:${secs.toString().padStart(2, '0')}`
-}
-
-const playSong = (song, index) => {
-  playerStore.playlist = [...favoriteSongs.value]
-  playerStore.playSong(index)
-}
-
-const toggleSongFavorite = async (song) => {
-  try {
-    await cancelCollectSong(song.id)
-    song.isFavorite = false
-    favoriteSongs.value = favoriteSongs.value.filter(s => s.id !== song.id)
-    ElMessage.success('已取消收藏')
-    window.dispatchEvent(new CustomEvent('favorite-updated', {
-      detail: { type: 'remove', songId: song.id }
-    }))
-  } catch (error) {
-    console.error('取消收藏失败', error)
-    ElMessage.error('操作失败')
-  }
+const playSong = (song, index, songList) => {
+  playerStore.playlist = songList || [song]
+  playerStore.playSong(index || 0)
 }
 
 const goToPlaylist = (playlistId) => {
@@ -475,29 +301,6 @@ const goToPlaylist = (playlistId) => {
 
 const editPlaylist = (playlistId) => {
   router.push(`/playlist/edit/${playlistId}`)
-}
-
-const deletePlaylistItem = async (playlist) => {
-  try {
-    await ElMessageBox.confirm(
-      `确定要删除歌单「${playlist.name}」吗？`,
-      '提示',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    )
-
-    await deletePlaylist(playlist.id)
-    createdPlaylists.value = createdPlaylists.value.filter(p => p.id !== playlist.id)
-    ElMessage.success('歌单删除成功')
-    window.dispatchEvent(new CustomEvent('playlist-deleted'))
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('删除失败')
-    }
-  }
 }
 </script>
 
@@ -589,7 +392,7 @@ const deletePlaylistItem = async (playlist) => {
   cursor: pointer;
   padding: 4px 8px;
   white-space: nowrap;
-  margin-bottom: 42px;
+  margin-bottom: 70px;
 }
 
 .change-avatar-link:hover {
@@ -616,8 +419,24 @@ const deletePlaylistItem = async (playlist) => {
 .profile-intro {
   font-size: 15px;
   line-height: 1.6;
-  margin: 0 0 20px 0;
+  margin: 0 0 12px 0;
   color: #606266;
+}
+
+.email {
+  font-size: 13px;
+  color: #909399;
+  margin: 0 0 20px 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: rgba(144, 147, 153, 0.3);
+  text-underline-offset: 2px;
+  transition: all 0.2s;
+}
+
+.email:hover {
+  color: #409eff;
+  text-decoration-color: rgba(64, 158, 255, 0.5);
 }
 
 .profile-stats {
@@ -637,6 +456,8 @@ const deletePlaylistItem = async (playlist) => {
   font-size: 24px;
   font-weight: 700;
   color: #303133;
+  margin: auto;
+  margin-bottom: 2px;
 }
 
 .stat-label {
@@ -733,365 +554,5 @@ const deletePlaylistItem = async (playlist) => {
   height: 2px;
   background: #409eff;
   border-radius: 1px;
-}
-
-.loading-state {
-  padding: 40px;
-  text-align: center;
-  color: #909399;
-  font-size: 14px;
-}
-
-.empty-state {
-  padding: 90px;
-  text-align: center;
-  color: #909399;
-  font-size: 14px;
-}
-
-.favorite-songs-list {
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.list-header {
-  display: flex;
-  align-items: center;
-  padding: 12px 20px;
-  background: #fafafa;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.list-header .col-index {
-  width: 60px;
-  font-size: 12px;
-  color: #909399;
-}
-
-.list-header .col-title {
-  flex: 1;
-  font-size: 12px;
-  color: #909399;
-  margin-right: auto;
-}
-
-.list-header .col-artist {
-  width: 150px;
-  font-size: 12px;
-  color: #909399;
-  flex-shrink: 0;
-}
-
-.list-header .col-album {
-  width: 180px;
-  font-size: 12px;
-  color: #909399;
-  flex-shrink: 0;
-}
-
-.list-header .col-duration {
-  width: 80px;
-  font-size: 12px;
-  color: #909399;
-  flex-shrink: 0;
-}
-
-.list-header .col-action {
-  width: 40px;
-  flex-shrink: 0;
-}
-
-.song-item {
-  display: flex;
-  align-items: center;
-  padding: 12px 20px;
-  border-bottom: 1px solid #f8f8f8;
-  transition: background 0.2s;
-  cursor: pointer;
-}
-
-.song-item:hover {
-  background: #fafafa;
-}
-
-.song-item.playing {
-  background: #f0f5ff;
-}
-
-.song-item .col-index {
-  width: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.song-index {
-  font-size: 13px;
-  color: #909399;
-}
-
-.playing-icon {
-  color: #409eff;
-  animation: spin 2s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.song-item .col-title {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  min-width: 0;
-  margin-right: auto;
-}
-
-.cover-wrapper {
-  position: relative;
-  width: 44px;
-  height: 44px;
-  margin-right: 14px;
-  border-radius: 6px;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.small-cover {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.play-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.song-item:hover .play-overlay {
-  opacity: 1;
-}
-
-.play-icon {
-  color: #fff;
-  font-size: 14px;
-}
-
-.song-detail {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.song-name {
-  font-size: 14px;
-  color: #303133;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.song-album-text {
-  font-size: 12px;
-  color: #909399;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.song-item .col-artist {
-  width: 150px;
-  font-size: 13px;
-  color: #606266;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex-shrink: 0;
-}
-
-.song-item .col-album {
-  width: 180px;
-  font-size: 13px;
-  color: #909399;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex-shrink: 0;
-}
-
-.song-item .col-duration {
-  width: 80px;
-  font-size: 13px;
-  color: #909399;
-  flex-shrink: 0;
-}
-
-.song-item .col-action {
-  width: 40px;
-  display: flex;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.action-icon {
-  font-size: 16px;
-  color: #475569;
-  cursor: pointer;
-  transition: all 0.2s;
-  padding: 4px;
-  border-radius: 50%;
-}
-
-.action-icon:hover {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
-}
-
-.like-icon {
-  font-size: 18px;
-  color: #909399;
-  cursor: pointer;
-  transition: all 0.2s;
-  padding: 4px;
-  border-radius: 50%;
-}
-
-.like-icon:hover {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
-}
-
-.like-icon.liked {
-  color: #ef4444;
-}
-
-.favorite-playlists-grid,
-.created-playlists-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 20px;
-}
-
-.playlist-card {
-  position: relative;
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.playlist-card:hover {
-  transform: translateY(-4px);
-}
-
-.playlist-cover {
-  position: relative;
-  width: 100%;
-  padding-top: 100%;
-  border-radius: 10px;
-  overflow: hidden;
-  margin-bottom: 12px;
-}
-
-.playlist-cover img {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.playlist-play-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.playlist-card:hover .playlist-play-overlay {
-  opacity: 1;
-}
-
-.play-btn {
-  width: 44px;
-  height: 44px;
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  color: #409eff;
-}
-
-.playlist-info {
-  padding: 0 4px;
-}
-
-.playlist-name {
-  font-size: 14px;
-  font-weight: 500;
-  color: #303133;
-  margin: 0 0 6px 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.playlist-meta {
-  font-size: 12px;
-  color: #909399;
-  margin: 0;
-}
-
-.playlist-actions-card {
-  display: flex;
-  gap: 16px;
-  padding: 8px 4px;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.playlist-card:hover .playlist-actions-card {
-  opacity: 1;
-}
-
-.action-btn {
-  font-size: 12px;
-  color: #606266;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: all 0.2s;
-}
-
-.action-btn:hover {
-  background: #f0f0f0;
-}
-
-.action-btn.delete {
-  color: #f56c6c;
-}
-
-.action-btn.delete:hover {
-  background: #fef0f0;
 }
 </style>
