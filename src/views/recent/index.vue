@@ -142,7 +142,7 @@ const addToPlayQueue = (song) => {
   
   playerStore.addToPlayQueue(song)
   activeMenu.value = null
-  ElMessage.success(`已将 "${song.name}" 加入下一首播放`)
+  ElMessage.success(`已加入播放队列`)
 }
 
 const addToFavorite = async (song) => {

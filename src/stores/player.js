@@ -212,7 +212,7 @@ export const usePlayerStore = defineStore('player', () => {
     if (playlistIndex !== -1) {
       if (playlistIndex <= currentIndex.value) {
         playlist.value.splice(playlistIndex, 1)
-        playQueue.value.unshift(normalizedSong)
+        playQueue.value.push(normalizedSong)
       } else {
         playlist.value.splice(playlistIndex, 1)
         playlist.value.splice(currentIndex.value + 1, 0, normalizedSong)
@@ -223,7 +223,7 @@ export const usePlayerStore = defineStore('player', () => {
     const queueIndex = playQueue.value.findIndex(s => s.id === songId)
     if (queueIndex !== -1) {
       playQueue.value.splice(queueIndex, 1)
-      playQueue.value.unshift(normalizedSong)
+      playQueue.value.push(normalizedSong)
       return
     }
 
