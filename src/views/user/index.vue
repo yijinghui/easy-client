@@ -5,8 +5,44 @@
         <div v-if="isOwnProfile" class="action-icon-wrapper" @click="showEditModal = true" title="编辑资料">
           <el-icon :size="20"><Edit /></el-icon>
         </div>
+        <div 
+          v-if="isOwnProfile" 
+          class="action-icon-wrapper settings-btn" 
+          @click.stop="showSettingsMenu = !showSettingsMenu" 
+          title="设置"
+        >
+          <el-icon :size="20"><Setting /></el-icon>
+        </div>
         <div v-if="isOwnProfile" class="action-icon-wrapper logout" @click="handleLogout" title="退出登录">
           <el-icon :size="20"><SwitchButton /></el-icon>
+        </div>
+        
+        <div v-if="showSettingsMenu" class="settings-menu" @click.stop>
+          <div class="menu-item" @click="handleMenuItem('username')">
+            <span>修改用户名</span>
+            <span class="menu-arrow">›</span>
+          </div>
+          <div class="menu-item" @click="handleMenuItem('email')">
+            <span>修改邮箱</span>
+            <span class="menu-arrow">›</span>
+          </div>
+          <div class="menu-item" @click="handleMenuItem('password')">
+            <span>修改密码</span>
+            <span class="menu-arrow">›</span>
+          </div>
+          <div class="menu-item" @click="handleMenuItem('forgotPassword')">
+            <span>忘记密码</span>
+            <span class="menu-arrow">›</span>
+          </div>
+          <div class="menu-divider"></div>
+          <div class="menu-item danger" @click="handleMenuItem('deleteAccount')">
+            <span>注销账号</span>
+            <span class="menu-arrow">›</span>
+          </div>
+          <div class="menu-item danger" @click="handleMenuItem('logout')">
+            <span>退出登录</span>
+            <span class="menu-arrow">›</span>
+          </div>
         </div>
       </div>
       <div class="profile-avatar-wrapper">
@@ -44,7 +80,7 @@
           </el-tag>
         </div>
         <p class="profile-intro">{{ userInfo.introduction || '暂无简介' }}</p>
-        <p v-if="isOwnProfile && userInfo.email" class="email" @click="copyEmail">{{ userInfo.email }}</p>
+        <p v-if="isOwnProfile && userInfo.email" class="email">{{ userInfo.email }}</p>
         <div class="profile-stats">
           <div class="stat-item">
             <span class="stat-value">{{ userInfo.favoriteSongCount }}</span>
@@ -134,10 +170,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { User, Edit, SwitchButton } from '@element-plus/icons-vue'
+import { User, Edit, SwitchButton, Setting } from '@element-plus/icons-vue'
 import { getUserInfo, getUserInfoById, logout, certifyArtist, updateUserAvatar } from '@/api/user'
 import { getFavoriteSongs, getFavoriteSongsByUserId } from '@/api/favorite'
 import { getUserAvatar, getSongAudio, getSongCover } from '@/utils/asset'
@@ -168,6 +204,7 @@ const userInfo = ref({
 })
 
 const showEditModal = ref(false)
+const showSettingsMenu = ref(false)
 const avatarInput = ref(null)
 const activeTab = ref('favorite')
 const favoriteSubTab = ref('songs')
@@ -180,16 +217,6 @@ const isOwnProfile = computed(() => {
 const profileUserId = computed(() => {
   return route.params.userId || null
 })
-
-const copyEmail = async () => {
-  if (!userInfo.value.email) return
-  try {
-    await navigator.clipboard.writeText(userInfo.value.email)
-    ElMessage.success('邮箱已复制到剪贴板')
-  } catch (error) {
-    ElMessage.error('复制失败')
-  }
-}
 
 watch(
   () => route.params.userId,
@@ -206,7 +233,16 @@ watch(
 onMounted(() => {
   fetchUserInfo()
   fetchFavoriteSongs()
+  document.addEventListener('click', handleDocumentClick)
 })
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleDocumentClick)
+})
+
+const handleDocumentClick = () => {
+  showSettingsMenu.value = false
+}
 
 const switchTab = (tab) => {
   activeTab.value = tab
@@ -330,6 +366,19 @@ const handleAvatarChange = async (event) => {
   }
 
   event.target.value = ''
+}
+
+const handleMenuItem = (type) => {
+  showSettingsMenu.value = false
+  const menuMap = {
+    username: '修改用户名',
+    email: '修改邮箱',
+    password: '修改密码',
+    forgotPassword: '忘记密码',
+    deleteAccount: '注销账号',
+    logout: '退出登录'
+  }
+  ElMessage.info(`${menuMap[type]}功能开发中`)
 }
 
 const handleLogout = () => {
@@ -487,18 +536,8 @@ const editPlaylist = (playlistId) => {
 
 .email {
   font-size: 13px;
-  color: #909399;
   margin: 0 0 20px 0;
-  cursor: pointer;
-  text-decoration: underline;
-  text-decoration-color: rgba(144, 147, 153, 0.3);
-  text-underline-offset: 2px;
-  transition: all 0.2s;
-}
-
-.email:hover {
-  color: #409eff;
-  text-decoration-color: rgba(64, 158, 255, 0.5);
+  user-select: text;
 }
 
 .profile-stats {
@@ -616,5 +655,55 @@ const editPlaylist = (playlistId) => {
   height: 2px;
   background: #409eff;
   border-radius: 1px;
+}
+
+.settings-menu {
+  position: absolute;
+  right: 0;
+  top: 52px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  min-width: 160px;
+  overflow: hidden;
+}
+
+.menu-item {
+  padding: 10px 16px;
+  font-size: 14px;
+  color: #303133;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.menu-arrow {
+  opacity: 0;
+  color: #c0c4cc;
+  font-size: 26px;
+  transition: opacity 0.2s;
+}
+
+.menu-item:hover .menu-arrow {
+  opacity: 1;
+}
+
+.menu-item:hover {
+  background: #f5f7fa;
+}
+
+.menu-item.danger:hover {
+  color: #f56c6c;
+  background: #fef0f0;
+}
+
+.menu-divider {
+  height: 1px;
+  background: #f0f0f0;
+  margin: 4px 0;
 }
 </style>
