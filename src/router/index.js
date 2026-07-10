@@ -7,8 +7,6 @@ import RecentView from '@/views/recent/index.vue'
 import CommentView from '@/views/comment/index.vue'
 import SearchView from '@/views/search/index.vue'
 import LoginView from '@/views/login/index.vue'
-import RegisterView from '@/views/login/register/index.vue'
-import ResetView from '@/views/login/reset/index.vue'
 import RoomView from '@/views/room/index.vue'
 import RoomLiveView from '@/views/room/live.vue'
 import UserView from '@/views/user/index.vue'
@@ -40,8 +38,8 @@ const routes = [
     ]
   },
   {path: '/login',name: 'login',component: LoginView},
-  {path: '/register',name: 'register',component: RegisterView},
-  {path: '/reset',name: 'reset',component: ResetView},
+  {path: '/register',name: 'register',component: LoginView},
+  {path: '/reset',name: 'reset',component: LoginView},
   {path: '/room/live/:roomId',name: 'roomLive',component: RoomLiveView, meta: { requiresAuth: true }}
 ]
 

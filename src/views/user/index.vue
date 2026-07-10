@@ -141,7 +141,7 @@ import { getUserInfo, getUserInfoById, logout, certifyArtist, updateUserAvatar }
 import { getUserAvatar } from '@/utils/asset'
 import { removeAuthToken, getCurrentUserId } from '@/utils/auth'
 import { usePlayerStore } from '@/stores/player'
-import UserEditModal from './components/UserEditModal.vue'
+import UserEditModal from './components/UserEditForm.vue'
 import FavoriteSong from './components/FavoriteSong.vue'
 import FavoritePlaylist from './components/FavoritePlaylist.vue'
 import CreatedPlaylist from './components/CreatedPlaylist.vue'

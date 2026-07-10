@@ -156,20 +156,13 @@
               <span class="stat-label">收藏歌单</span>
             </div>
             <div class="stat-item">
-              <span class="stat-value">{{ userProfile.followCount }}</span>
-              <span class="stat-label">关注</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value">{{ userProfile.fansCount }}</span>
-              <span class="stat-label">粉丝</span>
+              <span class="stat-value">{{ userProfile.createdPlaylistCount }}</span>
+              <span class="stat-label">创建歌单</span>
             </div>
           </div>
           <div class="logout-section">
             <el-button class="logout-btn" @click="handleLogout">退出登录</el-button>
           </div>
-        </div>
-        <div class="modal-footer">
-          <el-button class="edit-btn" @click="handleEditProfile">编辑</el-button>
         </div>
       </div>
     </div>
@@ -257,13 +250,11 @@ const userProfile = ref({
   introduction: '',
   favoriteSongCount: 0,
   favoritePlaylistCount: 0,
-  followCount: 0,
-  fansCount: 0
+  createdPlaylistCount: 0,
 })
 
 const customPlaylists = ref([])
 const favoritePlaylists = ref([])
-
 const displayUsername = computed(() => {
   return isLoggedIn.value ? userProfile.value.username : '未登录'
 })
@@ -330,8 +321,7 @@ const fetchUserInfo = async () => {
         introduction: res.data.introduction || '',
         favoriteSongCount: res.data.favoriteSongCount || 0,
         favoritePlaylistCount: res.data.favoritePlaylistCount || 0,
-        followCount: res.data.followCount || 0,
-        fansCount: res.data.fansCount || 0
+        createdPlaylistCount: res.data.createdPlaylistCount || 0,
       }
     }
   } catch (error) {
@@ -411,15 +401,9 @@ const handleLogout = () => {
     showUserProfile.value = false
     ElMessage.success('已退出登录')
     router.push('/home')
-  }).catch(() => {
-    ElMessage.info('已取消退出')
   })
 }
 
-const handleEditProfile = () => {
-  showUserProfile.value = false
-  router.push('/user')
-}
 
 const handleUserClick = () => {
   if (isLoggedIn.value) {
@@ -798,7 +782,7 @@ const handleSubmitCreate = async () => {
 
 .modal-content {
   background: #fff;
-  border-radius: 12px;
+  border-radius: 5px;
   width: 400px;
   max-width: 90%;
   overflow: hidden;
