@@ -78,25 +78,17 @@ const fetchUsers = async (pageNum = 1) => {
   try {
     const res = await searchUsers(text, pageNum, pageSize.value)
     if (res.data && Array.isArray(res.data.items)) {
-      if (pageNum === 1) {
-        results.value = res.data.items.map(mapUser)
-      } else {
-        results.value = [...results.value, ...res.data.items.map(mapUser)]
-      }
+      results.value = res.data.items.map(mapUser)
       total.value = res.data.total ?? results.value.length
     } else {
-      if (pageNum === 1) {
-        results.value = []
-        total.value = 0
-      }
+      results.value = []
+      total.value = 0
     }
     emit('loaded', results.value)
   } catch (error) {
     console.error('搜索用户失败', error)
-    if (pageNum === 1) {
-      results.value = []
-      total.value = 0
-    }
+    results.value = []
+    total.value = 0
   } finally {
     loading.value = false
   }
@@ -144,9 +136,10 @@ defineExpose({
 
 <style scoped>
 .user-list {
-  background: #f5f7fa;
+  background: #fff;
   border-radius: 8px;
   padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .user-grid {

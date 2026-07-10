@@ -108,7 +108,7 @@ const handlePageChange = (pageNum) => {
 }
 
 const handleClick = (artist) => {
-  router.push({ path: '/search', query: { q: artist.name } })
+  router.push({ path: `/artist/${artist.id}` })
 }
 
 const reset = () => {

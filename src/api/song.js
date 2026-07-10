@@ -23,6 +23,12 @@ export const getMonthTop200 = (offset = 0) => request.get('/song/top200/month', 
  */
 export const searchSongs = (text, pageNum = 1, pageSize = 20) => request.post('/song/search', null, { params: { text, pageNum, pageSize } })
 
+
+export const getPlaylistSongs = (playlistId, params) => request.get(`/song/playlist/${playlistId}`, { params })
+
+
+export const getArtistSongs = (artistId, params) => request.get(`/song/artist/${artistId}`,{ params })
+
 /**
  * 记录播放记录
  * @param {number} songId 歌曲ID

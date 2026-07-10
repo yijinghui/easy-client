@@ -5,13 +5,14 @@
       <div class="col-lyrics">歌词片段</div>
       <div class="col-album">专辑</div>
       <div class="col-duration">时长</div>
+      <div class="col-actions"></div>
     </div>
 
     <div v-if="loading" class="empty-state">
       <span>搜索中...</span>
     </div>
     <template v-else>
-      <div v-for="song in results" :key="song.id" class="search-item">
+      <div v-for="(song, index) in results" :key="song.id" class="search-item">
         <div class="song-info">
           <div class="cover-wrapper">
             <img :src="song.cover" class="small-cover" />
@@ -30,8 +31,29 @@
           v-html="song.lyricsSegment"
         ></div>
         <div v-else class="song-lyrics lyrics-empty">—</div>
-        <div class="song-album">{{ song.album }}</div>
+        <div class="song-album" v-html="song.albumHtml"></div>
         <div class="song-duration">{{ formatDuration(song.duration) }}</div>
+        <div class="song-actions">
+          <span 
+            class="action-icon like-icon" 
+            :class="{ liked: song.isFavorite }" 
+            @click.stop="handleFavorite(song)"
+          >♡</span>
+          <div class="action-btn" @click.stop="toggleMenu(song.id)">
+            <span class="action-icon">⋮</span>
+          </div>
+          <div v-if="activeMenu === song.id" :class="['action-menu', { 'action-menu-up': index >= results.length - 3 }]" @click.stop>
+            <div class="menu-item" @click="handleAddToPlaylist(song)">
+              <span>加入歌单</span>
+            </div>
+            <div class="menu-item" @click="handleAddToFavorite(song)">
+              <span>{{ song.isFavorite ? '取消收藏' : '加入我喜欢' }}</span>
+            </div>
+            <div class="menu-item" @click="handleAddToQueue(song)">
+              <span>添加到播放列表</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div v-if="results.length === 0" class="empty-state">
@@ -49,16 +71,35 @@
         @current-change="handlePageChange"
       />
     </div>
+
+    <el-dialog title="选择歌单" v-model="showAddToPlaylistModal" width="400px">
+      <div v-if="userPlaylists.length === 0" class="empty-state">
+        <span>暂无歌单</span>
+      </div>
+      <div v-else class="playlist-list">
+        <div 
+          v-for="pl in userPlaylists" 
+          :key="pl.id" 
+          class="playlist-item"
+          @click="confirmAddToPlaylist(pl.id)"
+        >
+          <span>{{ pl.name }}</span>
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, watch } from 'vue'
-import { ElMessage, ElPagination } from 'element-plus'
+import { ElMessage, ElPagination, ElDialog } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { usePlayerStore } from '@/stores/player'
 import { searchSongs } from '@/api/song'
 import { getSongAudio, getSongCover } from '@/utils/asset'
+import { collectSong, cancelCollectSong } from '@/api/favorite'
+import { getUserPlaylists, addSongToPlaylist } from '@/api/playlist'
+import { getCurrentUserId } from '@/utils/auth'
 
 const props = defineProps({
   keyword: {
@@ -81,6 +122,10 @@ const results = ref([])
 const total = ref(0)
 const page = ref(1)
 const pageSize = ref(20)
+const activeMenu = ref(null)
+const userPlaylists = ref([])
+const showAddToPlaylistModal = ref(false)
+const currentSongForPlaylist = ref(null)
 
 const allowEmHighlight = (value) => {
   if (value == null) return ''
@@ -102,7 +147,8 @@ const mapSong = (song) => ({
   nameHtml: getHighlightedValue(song, 'songNameHighlight', 'songName'),
   artist: String(song.artistName || '').replace(/<\/?em>/gi, ''),
   artistHtml: getHighlightedValue(song, 'artistNameHighlight', 'artistName'),
-  album: song.album,
+  album: String(song.album || '').replace(/<\/?em>/gi, ''),
+  albumHtml: getHighlightedValue(song, 'albumHighlight', 'album'),
   cover: getSongCover(song.coverUrl, `https://picsum.photos/40/40?random=${song.songId}`),
   url: getSongAudio(song.audioUrl),
   duration: parseFloat(song.duration) || 0,
@@ -168,6 +214,109 @@ const handlePlay = (song) => {
   playerStore.setPlaylist(results.value)
   const index = results.value.findIndex(s => s.id === song.id)
   playerStore.playSong(index)
+}
+
+const handleFavorite = async (song) => {
+  if (!props.isLoggedIn) {
+    ElMessage.info('请先登录')
+    router.push('/login')
+    return
+  }
+
+  try {
+    if (song.isFavorite) {
+      await cancelCollectSong(song.id)
+      song.isFavorite = false
+      ElMessage.success('已取消收藏')
+    } else {
+      await collectSong(song.id)
+      song.isFavorite = true
+      ElMessage.success('收藏成功')
+    }
+    window.dispatchEvent(new CustomEvent('favorite-updated', {
+      detail: {
+        type: song.isFavorite ? 'add' : 'remove',
+        songId: song.id,
+        song
+      }
+    }))
+  } catch (error) {
+    console.error('收藏操作失败', error)
+    ElMessage.error('操作失败')
+  }
+}
+
+const toggleMenu = (songId) => {
+  activeMenu.value = activeMenu.value === songId ? null : songId
+}
+
+const handleAddToFavorite = async (song) => {
+  if (!props.isLoggedIn) {
+    ElMessage.info('请先登录')
+    router.push('/login')
+    return
+  }
+
+  try {
+    if (song.isFavorite) {
+      await cancelCollectSong(song.id)
+      song.isFavorite = false
+      ElMessage.success('已取消收藏')
+    } else {
+      await collectSong(song.id)
+      song.isFavorite = true
+      ElMessage.success('已加入我喜欢')
+    }
+    activeMenu.value = null
+    window.dispatchEvent(new CustomEvent('favorite-updated', {
+      detail: { type: song.isFavorite ? 'add' : 'remove', songId: song.id, song }
+    }))
+  } catch (error) {
+    console.error('收藏操作失败', error)
+    ElMessage.error('操作失败')
+  }
+}
+
+const handleAddToQueue = (song) => {
+  playerStore.addToPlayQueue(song)
+  activeMenu.value = null
+  ElMessage.success('已加入播放列表')
+}
+
+const handleAddToPlaylist = async (song) => {
+  const userId = getCurrentUserId()
+  if (!userId) {
+    ElMessage.info('请先登录')
+    router.push('/login')
+    return
+  }
+
+  try {
+    const res = await getUserPlaylists(userId)
+    userPlaylists.value = res.data?.map(p => ({
+      id: p.playlistId,
+      name: p.title || ''
+    })) || []
+    currentSongForPlaylist.value = song
+    showAddToPlaylistModal.value = true
+    activeMenu.value = null
+  } catch (error) {
+    console.error('获取歌单列表失败', error)
+    ElMessage.error('操作失败')
+  }
+}
+
+const confirmAddToPlaylist = async (targetPlaylistId) => {
+  if (!currentSongForPlaylist.value) return
+
+  try {
+    await addSongToPlaylist(targetPlaylistId, currentSongForPlaylist.value.id)
+    showAddToPlaylistModal.value = false
+    ElMessage.success('已添加到歌单')
+  } catch (error) {
+    console.error('添加到歌单失败', error)
+    ElMessage.error('操作失败')
+  }
 }
 
 const reset = () => {
@@ -244,6 +393,11 @@ defineExpose({
   font-size: 12px;
   color: #909399;
   text-align: left;
+}
+
+.search-header .col-actions {
+  width: 80px;
+  flex-shrink: 0;
 }
 
 .search-item {
@@ -346,6 +500,7 @@ defineExpose({
 
 .song-name :deep(em),
 .song-artist :deep(em),
+.song-album :deep(em),
 .lyrics-segment :deep(em) {
   color: #409eff;
   font-style: normal;
@@ -367,6 +522,77 @@ defineExpose({
   color: #909399;
 }
 
+.song-actions {
+  width: 80px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.action-icon {
+  font-size: 20px;
+  color: #909399;
+  cursor: pointer;
+}
+
+.like-icon {
+  font-size: 18px;
+  color: #909399;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-right: 16px;
+}
+
+.like-icon:hover {
+  color: #ef4444;
+}
+
+.like-icon.liked {
+  color: #ef4444;
+}
+
+.action-btn {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.action-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 4px;
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  min-width: 140px;
+}
+
+.action-menu-up {
+  top: auto;
+  bottom: 100%;
+  margin-top: 0;
+  margin-bottom: 4px;
+}
+
+.menu-item {
+  padding: 8px 16px;
+  font-size: 13px;
+  color: #303133;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.menu-item:hover {
+  background: #f5f7fa;
+}
+
 .empty-state {
   padding: 40px;
   text-align: center;
@@ -378,5 +604,26 @@ defineExpose({
   display: flex;
   justify-content: center;
   padding: 20px;
+}
+
+.playlist-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.playlist-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.playlist-item:hover {
+  background: #f5f7fa;
+}
+
+.playlist-item span {
+  font-size: 14px;
+  color: #303133;
 }
 </style>

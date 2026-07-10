@@ -64,10 +64,10 @@
 <script setup>
 import { ref, watch, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
-import SearchSong from './components/song.vue'
-import SearchPlaylist from './components/playlist.vue'
-import SearchArtist from './components/artist.vue'
-import SearchUser from './components/user.vue'
+import SearchSong from './components/SongList.vue'
+import SearchPlaylist from './components/PlaylistList.vue'
+import SearchArtist from './components/ArtisList.vue'
+import SearchUser from './components/UserList.vue'
 
 const route = useRoute()
 
@@ -189,5 +189,9 @@ onMounted(async () => {
   text-align: center;
   color: #909399;
   font-size: 14px;
+}
+
+:deep(.search-list) {
+  overflow: visible;
 }
 </style>

@@ -12,19 +12,11 @@
             <el-input v-model="editForm.username" placeholder="请输入用户名" />
           </el-form-item>
 
-          <el-form-item label="手机号" prop="phone">
-            <el-input v-model="editForm.phone" placeholder="请输入手机号" />
-          </el-form-item>
-
-          <el-form-item label="邮箱" prop="email">
-            <el-input v-model="editForm.email" placeholder="请输入邮箱" />
-          </el-form-item>
-
           <el-form-item label="简介" prop="introduction">
             <el-input 
               v-model="editForm.introduction" 
               type="textarea" 
-              :rows="3"
+              :rows="6"
               placeholder="请输入简介" 
             />
           </el-form-item>
@@ -67,13 +59,6 @@ const formRules = {
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
     { min: 2, max: 20, message: '用户名长度在 2 到 20 个字符', trigger: 'blur' }
-  ],
-  email: [
-    { required: true, message: '请输入邮箱', trigger: 'blur' },
-    { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }
-  ],
-  phone: [
-    { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
   ]
 }
 
@@ -128,7 +113,7 @@ const handleSubmit = async () => {
 
 .edit-modal-content {
   background: #fff;
-  border-radius: 12px;
+  border-radius: 4px;
   width: 450px;
   max-width: 90%;
   overflow: hidden;

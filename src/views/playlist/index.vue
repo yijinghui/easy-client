@@ -44,66 +44,13 @@
         </div>
       </div>
 
-      <div class="playlist-songs">
-        <div class="songs-header">
-          <h2>歌曲列表</h2>
-          <span class="songs-count">{{ playlist.songCount }} 首</span>
-        </div>
-        <div class="songs-list">
-          <div class="list-header">
-            <div class="col-title">歌名</div>
-            <div class="col-artist">歌手</div>
-            <div class="col-album">专辑</div>
-            <div class="col-duration">时长</div>
-            <div class="col-action"></div>
-          </div>
-          <div 
-            v-for="(song, index) in songs" 
-            :key="song.id" 
-            class="song-item"
-            :class="{ playing: playerStore.currentSong?.id === song.id }"
-          >
-            <div class="col-title">
-              <div class="cover-wrapper">
-                <img :src="song.cover" class="small-cover" />
-                <div class="play-overlay" @click="playSong(song, index)">
-                  <span class="play-icon">▶</span>
-                </div>
-              </div>
-              <div class="song-detail">
-                <span class="song-name">{{ song.name }}</span>
-                <span class="song-album-text">{{ song.album }}</span>
-              </div>
-            </div>
-            <div class="col-artist">{{ song.artist }}</div>
-            <div class="col-album">{{ song.album }}</div>
-            <div class="col-duration">{{ formatDuration(song.duration) }}</div>
-            <div class="col-action">
-              <span class="action-icon like-icon" :class="{ liked: song.isFavorite }" @click="toggleSongFavorite(song)">♡</span>
-              <div class="action-btn" @click.stop="toggleMenu(song.id)">
-                <span class="action-icon">⋮</span>
-              </div>
-              <div v-if="activeMenu === song.id" :class="['action-menu', { 'action-menu-up': index >= songs.length - 3 }]" @click.stop>
-                <div v-if="isOwnPlaylist" class="menu-item" @click="handleRemoveSongFromPlaylist(song)">
-                  <span>从歌单中移除</span>
-                </div>
-                <div class="menu-item" @click="handleAddToPlaylist(song)">
-                  <span>加入歌单</span>
-                </div>
-                <div class="menu-item" @click="song.isFavorite ? handleRemoveFromFavorite(song) : handleAddToFavorite(song)">
-                  <span>{{ song.isFavorite ? '取消收藏' : '加入我喜欢' }}</span>
-                </div>
-                <div class="menu-item" @click="handleAddToQueue(song)">
-                  <span>添加到播放列表</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div v-if="songs.length === 0" class="empty-state">
-            <span>暂无歌曲</span>
-          </div>
-        </div>
-      </div>
+      <SongList 
+        :songs="songs" 
+        :playlist-id="playlist.id"
+        :show-remove-from-playlist="true"
+        :is-own-playlist="isOwnPlaylist"
+        @remove-from-playlist="handleRemoveFromPlaylist"
+      />
     </div>
     <div v-else class="empty-state">
       <span>歌单不存在或已被删除</span>
@@ -133,11 +80,13 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Star, Edit, Delete, Headset } from '@element-plus/icons-vue'
 import { usePlayerStore } from '@/stores/player'
-import { getPlaylistSongs, getPlaylistDetail, removeSongFromPlaylist, getUserPlaylists, addSongToPlaylist } from '@/api/playlist'
+import { getPlaylistDetail, removeSongFromPlaylist, getUserPlaylists, addSongToPlaylist } from '@/api/playlist'
+import { getPlaylistSongs } from '@/api/song'
 import { collectPlaylist, cancelCollectPlaylist, collectSong, cancelCollectSong } from '@/api/favorite'
 import { getSongAudio, getSongCover, getPlaylistCover } from '@/utils/asset'
 import { getCurrentUserId } from '@/utils/auth'
 import { deletePlaylist } from '@/api/playlist'
+import SongList from '@/components/song/SongList.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -344,12 +293,11 @@ const toggleMenu = (songId) => {
   activeMenu.value = activeMenu.value === songId ? null : songId
 }
 
-const handleRemoveSongFromPlaylist = async (song) => {
+const handleRemoveFromPlaylist = async ({ song }) => {
   try {
     await removeSongFromPlaylist(playlist.value.id, song.id)
     songs.value = songs.value.filter(s => s.id !== song.id)
     playlist.value.songCount = songs.value.length
-    activeMenu.value = null
     ElMessage.success('已从歌单中移除')
   } catch (error) {
     console.error('移除歌曲失败', error)

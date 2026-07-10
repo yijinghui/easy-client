@@ -48,6 +48,8 @@ const pageConfig = computed(() => pageMap[route.name] || pageMap.login)
   align-items: center;
   justify-content: center;
   background: #f5f7fa;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .login-box {
@@ -57,6 +59,8 @@ const pageConfig = computed(() => pageMap[route.name] || pageMap.login)
   border-radius: 8px;
   border: 1px solid #e8e8e8;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .login-header {
@@ -158,4 +162,12 @@ const pageConfig = computed(() => pageMap[route.name] || pageMap.login)
   background: #3088e6;
   border-color: #3088e6;
 }
+
+:deep(.login-form .el-input__inner),
+:deep(.login-form .el-textarea__inner) {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+
 </style>

@@ -7,8 +7,8 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import Banner from '@/views/home/components/Banner.vue'
-import Recommend from '@/views/home/components/Recommend.vue'
+import Banner from '@/views/home/components/BannerList.vue'
+import Recommend from '@/views/home/components/RecommendList.vue'
 import { getRecommendedSongs } from '@/api/song'
 import { getSongAudio, getSongCover } from '@/utils/asset'
 

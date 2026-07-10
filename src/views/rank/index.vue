@@ -196,7 +196,7 @@ const switchTab = (tab) => {
 const playSong = (index) => {
   const isLoggedIn = !!localStorage.getItem('token')
   if (!isLoggedIn) {
-    ElMessage.info('未登录，登录后体验更多内容')
+    ElMessage.warning('登录后享受更多体验哦~')
     router.push('/login')
     return
   }

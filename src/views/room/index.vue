@@ -9,7 +9,6 @@
     <template v-else>
       <div v-if="!isLoggedIn" class="empty-state">
         <span>请登录后查看歌房列表</span>
-        <el-button type="primary" @click="goLogin" class="login-btn">去登录</el-button>
       </div>
       <template v-else>
         <div class="card-grid">

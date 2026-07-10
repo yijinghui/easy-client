@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import LayoutView from '@/views/layout/index.vue'
 import HomeView from '@/views/home/index.vue'
 import RankView from '@/views/rank/index.vue'
@@ -8,10 +9,11 @@ import CommentView from '@/views/comment/index.vue'
 import SearchView from '@/views/search/index.vue'
 import LoginView from '@/views/login/index.vue'
 import RoomView from '@/views/room/index.vue'
-import RoomLiveView from '@/views/room/live.vue'
+import RoomLiveView from '@/views/live/index.vue'
 import UserView from '@/views/user/index.vue'
 import PlaylistView from '@/views/playlist/index.vue'
-import PlaylistEditView from '@/views/playlist/edit.vue'
+import PlaylistEditView from '@/views/playlist/edit/index.vue'
+import ArtistView from '@/views/artist/index.vue'
 import { getAuthToken } from '@/utils/auth'
 
 
@@ -28,13 +30,14 @@ const routes = [
       {path: '/rank',name: 'rank',component: RankView},
       {path: '/room',name: 'room',component: RoomView},
       {path: '/favorite',name: 'favorite',component: FavoriteView},
-      {path: '/recent',name: 'recent',component: RecentView, meta: { requiresAuth: true }},
+      {path: '/recent',name: 'recent',component: RecentView},
       {path: '/search', name: 'search', component: SearchView},
       {path: '/comment/:songId', name: 'comment', component: CommentView},
       {path: '/user/:userId', name: 'userDetail', component: UserView, meta: { requiresAuth: true }},
 {path: '/user', name: 'user', component: UserView, meta: { requiresAuth: true }},
       {path: '/playlist/edit/:id', name: 'playlistEdit', component: PlaylistEditView, meta: { requiresAuth: true }},
       {path: '/playlist/:id', name: 'playlist', component: PlaylistView},
+      {path: '/artist/:id', name: 'artist', component: ArtistView},
     ]
   },
   {path: '/login',name: 'login',component: LoginView},
@@ -54,6 +57,7 @@ router.beforeEach((to, from, next) => {
   if (to.meta.requiresAuth) {
     const token = getAuthToken()
     if (!token) {
+      ElMessage.warning('登录后享受更多体验哦~')
       next('/login')
     } else {
       next()

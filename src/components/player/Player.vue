@@ -13,9 +13,6 @@
     
     <!-- 展开的播放器详情 -->
     <div v-if="isExpanded" class="player-expanded">
-      <div class="expanded-header">
-        <img src="@/assets/icons/x.png" class="collapse-btn" @click="isExpanded = false" />
-      </div>
       <div class="expanded-content">
         <div class="expanded-left">
           <div class="album-cover">
@@ -632,24 +629,7 @@ onUnmounted(() => {
   overflow-y: auto;
 }
 
-.expanded-header {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 16px;
-  margin-top: 16px;
-}
 
-.collapse-btn {
-  width: 32px;
-  height: 32px;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 4px;
-  transition: all 0.2s;
-  filter: brightness(0.5);
-  opacity: 0.6;
-  object-fit: contain;
-}
 
 .collapse-btn:hover {
   background: #e2e8f0;

@@ -100,11 +100,12 @@
           </span>
         </div>
 
-        <FavoriteSong 
+        <SongList 
           v-if="favoriteSubTab === 'songs'"
-          :current-song-id="playerStore.currentSong?.id"
-          :user-id="profileUserId"
-          @play-song="playSong"
+          :songs="favoriteSongs"
+          :show-favorite="true"
+          unfavorite-text="从我喜欢中移除"
+          @favorite-change="handleFavoriteChange"
         />
 
         <FavoritePlaylist 
@@ -138,13 +139,14 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { User, Edit, SwitchButton } from '@element-plus/icons-vue'
 import { getUserInfo, getUserInfoById, logout, certifyArtist, updateUserAvatar } from '@/api/user'
-import { getUserAvatar } from '@/utils/asset'
+import { getFavoriteSongs, getFavoriteSongsByUserId } from '@/api/favorite'
+import { getUserAvatar, getSongAudio, getSongCover } from '@/utils/asset'
 import { removeAuthToken, getCurrentUserId } from '@/utils/auth'
 import { usePlayerStore } from '@/stores/player'
 import UserEditModal from './components/UserEditForm.vue'
-import FavoriteSong from './components/FavoriteSong.vue'
-import FavoritePlaylist from './components/FavoritePlaylist.vue'
-import CreatedPlaylist from './components/CreatedPlaylist.vue'
+import SongList from '@/components/song/SongList.vue'
+import FavoritePlaylist from './components/FavoritePlaylistList.vue'
+import CreatedPlaylist from './components/CreatedPlaylistList.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -169,6 +171,7 @@ const showEditModal = ref(false)
 const avatarInput = ref(null)
 const activeTab = ref('favorite')
 const favoriteSubTab = ref('songs')
+const favoriteSongs = ref([])
 
 const isOwnProfile = computed(() => {
   return String(userInfo.value.userId) === getCurrentUserId()
@@ -194,6 +197,7 @@ watch(
     console.log('路由参数变化 - newUserId:', newUserId, 'oldUserId:', oldUserId)
     if (newUserId !== oldUserId) {
       fetchUserInfo()
+      fetchFavoriteSongs()
     }
   },
   { immediate: false }
@@ -201,6 +205,7 @@ watch(
 
 onMounted(() => {
   fetchUserInfo()
+  fetchFavoriteSongs()
 })
 
 const switchTab = (tab) => {
@@ -229,9 +234,6 @@ const fetchUserInfo = async () => {
         favoriteSongCount: res.data.favoriteSongCount || 0,
         favoritePlaylistCount: res.data.favoritePlaylistCount || 0,
         createdPlaylistCount: res.data.createdPlaylistCount || 0,
-        followCount: res.data.followCount || 0,
-        fansCount: res.data.fansCount || 0,
-        visitorCount: res.data.visitorCount || 0,
         artistId: res.data.artistId || null
       }
     }
@@ -241,8 +243,44 @@ const fetchUserInfo = async () => {
   }
 }
 
+const fetchFavoriteSongs = async () => {
+  try {
+    let res
+    const targetUserId = profileUserId.value
+    if (targetUserId) {
+      res = await getFavoriteSongsByUserId(targetUserId, { pageNum: 1, pageSize: 100 })
+    } else {
+      res = await getFavoriteSongs({ pageNum: 1, pageSize: 100 })
+    }
+    if (res.data && res.data.items) {
+      favoriteSongs.value = res.data.items.map(song => ({
+        id: song.songId,
+        name: song.songName,
+        artist: song.artistName,
+        album: song.album,
+        cover: getSongCover(song.coverUrl),
+        url: getSongAudio(song.audioUrl),
+        duration: parseFloat(song.duration) || 0,
+        isFavorite: true,
+        lyrics: song.lyrics || '',
+        lyricsHead: song.lyricsHead || '',
+        lyricsTimestamps: song.nested || ''
+      }))
+    }
+  } catch (error) {
+    console.error('获取收藏歌曲失败', error)
+    favoriteSongs.value = []
+  }
+}
+
+const handleFavoriteChange = ({ song, isFavorite }) => {
+  if (!isFavorite) {
+    favoriteSongs.value = favoriteSongs.value.filter(s => s.id !== song.id)
+  }
+}
+
 const handleCertify = () => {
-  ElMessageBox.prompt('请输入您要认证的歌手ID', '歌手认证', {
+  ElMessageBox.prompt('请输入您要认证的歌手ID', '歌手认证（待开发）', {
     confirmButtonText: '提交认证',
     cancelButtonText: '取消',
     inputPlaceholder: '请输入数字歌手ID',
@@ -312,8 +350,6 @@ const handleLogout = () => {
     removeAuthToken()
     ElMessage.success('已退出登录')
     router.push('/login')
-  }).catch(() => {
-    ElMessage.info('已取消退出')
   })
 }
 
